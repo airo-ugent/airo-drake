@@ -15,5 +15,5 @@ dependencies:
     - pytest
     - pre-commit
     - mypy
-    - darglint
+    - "airo-typing @ git+https://github.com/airo-ugent/airo-mono@main#subdirectory=airo-typing"
     - -e .
