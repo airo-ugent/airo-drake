@@ -21,6 +21,7 @@ classifiers = [
 dependencies = [
     "airo-models",
     "drake",
+    "ur-analytic-ik"
 ]
 
 [project.urls]

@@ -35,4 +35,4 @@ See the [`airo-mono`](https://github.com/airo-ugent/airo-mono) developer guide.
 A very similar process and tools are used for this package.
 
 ### Releasing 🏷️
-See [`airo-models`](https://github.com/airo-ugent/airo-models/tree/main),releasing `airo-drake` works the same way.
+See [`airo-models`](https://github.com/airo-ugent/airo-models/tree/main), releasing `airo-drake` works the same way.

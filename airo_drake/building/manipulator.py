@@ -10,7 +10,8 @@ from pydrake.planning import RobotDiagramBuilder
 # X_URBASE_ROSBASE is the 180 rotation between ROS URDF base and the UR control box base
 X_URBASE_ROSBASE = RigidTransform(rpy=RollPitchYaw([0, 0, np.pi]), p=[0, 0, 0])  # type: ignore
 
-X_URTOOL0_ROBOTIQ = RigidTransform(rpy=RollPitchYaw([0, 0, np.pi / 2]), p=[0, 0, 0])  # type: ignore
+# 180 degree rotation and 1 cm (estimate) offset for the coupling / flange
+X_URTOOL0_ROBOTIQ = RigidTransform(rpy=RollPitchYaw([0, 0, np.pi / 2]), p=[0, 0, 0.01])  # type: ignore
 
 
 def add_manipulator(
