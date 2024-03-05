@@ -11,7 +11,7 @@ def animate_ik_solutions(
     arm_index: ModelInstanceIndex,
     joint_solutions: list[np.ndarray],
     time_per_solution: float = 1.0,
-):
+) -> None:
     """Publish a recorded animation to meshcat where the robot arm cycles through the provided joint solutions.
 
     Args:
