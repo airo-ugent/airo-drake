@@ -8,8 +8,10 @@ from airo_drake.building.floor import add_floor
 from airo_drake.building.manipulator import add_manipulator
 from airo_drake.building.meshcat import add_meshcat
 from airo_drake.scene import DualArmScene, SingleArmScene
+from airo_drake.time_parametrization.toppra import time_parametrize_toppra
+from airo_drake.trajectory.discretize import discretize_drake_joint_trajectory
 from airo_drake.visualization.frame import visualize_frame
-from airo_drake.visualization.joints import animate_joint_configurations
+from airo_drake.visualization.joints import animate_joint_configurations, animate_joint_trajectory
 
 __all__ = [
     "add_floor",
@@ -20,4 +22,7 @@ __all__ = [
     "DualArmScene",
     "visualize_frame",
     "animate_joint_configurations",
+    "animate_joint_trajectory",
+    "time_parametrize_toppra",
+    "discretize_drake_joint_trajectory",
 ]
