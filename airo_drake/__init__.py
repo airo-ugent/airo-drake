@@ -9,6 +9,7 @@ from airo_drake.building.manipulator import add_manipulator
 from airo_drake.building.meshcat import add_meshcat
 from airo_drake.scene import DualArmScene, SingleArmScene
 from airo_drake.visualization.frame import visualize_frame
+from airo_drake.visualization.inverse_kinematics import animate_ik_solutions
 
 __all__ = [
     "add_floor",
@@ -18,4 +19,5 @@ __all__ = [
     "SingleArmScene",
     "DualArmScene",
     "visualize_frame",
+    "animate_ik_solutions",
 ]
