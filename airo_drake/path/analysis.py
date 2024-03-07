@@ -1,0 +1,82 @@
+import numpy as np
+from airo_typing import JointConfigurationType, JointPathType
+
+
+def find_closest_configuration(
+    reference_configuration: JointConfigurationType, candidates: list[JointConfigurationType]
+) -> JointConfigurationType:
+    """Finds the closest configuration to a reference configuration within a set of candidates."""
+    candidates = np.array(candidates).squeeze()
+    distances = np.linalg.norm(candidates - reference_configuration, axis=1)  # Vectorized calculation
+    closest_index = np.argmin(distances)
+    return candidates[closest_index]
+
+
+def create_paths_from_closest_solutions(
+    path_joint_solutions: list[list[JointConfigurationType]],
+) -> list[JointPathType]:
+    """Constructs paths by iteratively connecting closest joint configurations."""
+
+    paths = []
+    start_configurations = path_joint_solutions[0]
+    for start_configuration in start_configurations:
+        path = [start_configuration]
+        for joint_solutions in path_joint_solutions[1:]:
+            closest_config = find_closest_configuration(path[-1], joint_solutions)
+            path.append(closest_config)
+        paths.append(np.array(path))
+    return paths
+
+
+def calculate_joint_path_distances(path: JointPathType):
+    """Calculate the distances between consecutive joint configurations in a joint path.
+
+    Args:
+        path: A path of joint configurations.
+
+    Returns:
+        An array of distances between consecutive joint configurations (1 shorter than path).
+    """
+    return np.linalg.norm(np.diff(path, axis=0), axis=1)
+
+
+def calculate_joint_path_outlier_threshold(distances: np.ndarray, iqr_multiplier: float = 20.0):
+    """Calculate a threshold for detecting unusually large jumps in a joint path.
+
+    We use a one-sided IQR-based (interquartile range) method:
+    * One-sided because we don't care about unusually small jumps.
+    * IQR-based instead of using standard deviation because it's less sensitive to outliers.
+
+    Jumps between consecutive IK solutions can happen for a few reasons:
+    * Singularities: Near robot singularities, small changes in the end-effector
+    pose can lead to large, discontinuous changes in the joint configurations required.
+    * Incompleteness: the IK solver might not find the solution that is closest to the previous one.
+
+    Args:
+        distance: The distances between consecutive joint configurations.
+        iqr_multiplier: A multiplier for the interquartile range.
+
+    Returns:
+        A threshold for detecting unusually large jumps in joint configuration distances.
+    """
+    q1, q3 = np.percentile(distances, [25, 75])
+    interquartile_range = q3 - q1
+    threshold = q3 + (iqr_multiplier * interquartile_range)
+    return threshold
+
+
+def joint_path_has_large_jumps(path: JointPathType, iqr_multiplier: float = 20.0):
+    """Check a joint path for unusually large jumps in joint configuration distances.
+
+    See the docstring for `calculate_joint_path_iqr_threshold` for more details.
+
+    Args:
+        path: A path of joint configurations.
+        iqr_multiplier: A multiplier for the interquartile range.
+
+    Returns:
+        A boolean indicating whether the joint path contains unusually large jumps.
+    """
+    distances = calculate_joint_path_distances(path)
+    threshold = calculate_joint_path_outlier_threshold(distances, iqr_multiplier)
+    return np.any(distances > threshold)

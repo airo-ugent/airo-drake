@@ -7,6 +7,13 @@ from airo_drake.building.finish import finish_build
 from airo_drake.building.floor import add_floor
 from airo_drake.building.manipulator import X_URBASE_ROSBASE, X_URTOOL0_ROBOTIQ, add_manipulator
 from airo_drake.building.meshcat import add_meshcat
+from airo_drake.path.analysis import (
+    calculate_joint_path_distances,
+    calculate_joint_path_outlier_threshold,
+    create_paths_from_closest_solutions,
+    find_closest_configuration,
+    joint_path_has_large_jumps,
+)
 from airo_drake.scene import DualArmScene, SingleArmScene
 from airo_drake.time_parametrization.toppra import time_parametrize_toppra
 from airo_drake.trajectory.discretize import discretize_drake_joint_trajectory
@@ -27,4 +34,9 @@ __all__ = [
     "animate_joint_trajectory",
     "time_parametrize_toppra",
     "discretize_drake_joint_trajectory",
+    "calculate_joint_path_outlier_threshold",
+    "joint_path_has_large_jumps",
+    "find_closest_configuration",
+    "create_paths_from_closest_solutions",
+    "calculate_joint_path_distances",
 ]

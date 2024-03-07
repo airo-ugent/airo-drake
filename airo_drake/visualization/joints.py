@@ -92,6 +92,11 @@ def animate_joint_configurations(
     if time_per_configuration is not None:
         duration = time_per_configuration * len(joint_configurations)
 
+    # Due to how ZeroOrderHold works, we need to duplicate the last configuration.
+    # See note on how the second point is ignore when two points are provided:
+    # https://drake.mit.edu/doxygen_cxx/classdrake_1_1trajectories_1_1_piecewise_polynomial.html#a06278ca4588ba1adb004b84fdfc62f3c
+    joint_configurations = np.vstack([joint_configurations, joint_configurations[-1]])
+
     joint_times = np.linspace(0.0, duration, len(joint_configurations))
     joints_interpolated = PiecewisePolynomial.ZeroOrderHold(joint_times, joint_configurations.T)
 
