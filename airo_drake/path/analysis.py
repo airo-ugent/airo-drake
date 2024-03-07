@@ -6,10 +6,10 @@ def find_closest_configuration(
     reference_configuration: JointConfigurationType, candidates: list[JointConfigurationType]
 ) -> JointConfigurationType:
     """Finds the closest configuration to a reference configuration within a set of candidates."""
-    candidates = np.array(candidates).squeeze()
-    distances = np.linalg.norm(candidates - reference_configuration, axis=1)  # Vectorized calculation
+    candidates_array = np.array(candidates).squeeze()
+    distances = np.linalg.norm(candidates_array - reference_configuration, axis=1)  # Vectorized calculation
     closest_index = np.argmin(distances)
-    return candidates[closest_index]
+    return candidates_array[closest_index]
 
 
 def create_paths_from_closest_solutions(
@@ -28,7 +28,7 @@ def create_paths_from_closest_solutions(
     return paths
 
 
-def calculate_joint_path_distances(path: JointPathType):
+def calculate_joint_path_distances(path: JointPathType) -> np.ndarray:
     """Calculate the distances between consecutive joint configurations in a joint path.
 
     Args:
@@ -40,7 +40,7 @@ def calculate_joint_path_distances(path: JointPathType):
     return np.linalg.norm(np.diff(path, axis=0), axis=1)
 
 
-def calculate_joint_path_outlier_threshold(distances: np.ndarray, iqr_multiplier: float = 20.0):
+def calculate_joint_path_outlier_threshold(distances: np.ndarray, iqr_multiplier: float = 20.0) -> float:
     """Calculate a threshold for detecting unusually large jumps in a joint path.
 
     We use a one-sided IQR-based (interquartile range) method:
@@ -65,7 +65,7 @@ def calculate_joint_path_outlier_threshold(distances: np.ndarray, iqr_multiplier
     return threshold
 
 
-def joint_path_has_large_jumps(path: JointPathType, iqr_multiplier: float = 20.0):
+def joint_path_has_large_jumps(path: JointPathType, iqr_multiplier: float = 20.0) -> bool:
     """Check a joint path for unusually large jumps in joint configuration distances.
 
     See the docstring for `calculate_joint_path_iqr_threshold` for more details.
@@ -79,4 +79,4 @@ def joint_path_has_large_jumps(path: JointPathType, iqr_multiplier: float = 20.0
     """
     distances = calculate_joint_path_distances(path)
     threshold = calculate_joint_path_outlier_threshold(distances, iqr_multiplier)
-    return np.any(distances > threshold)
+    return bool(np.any(distances > threshold))
