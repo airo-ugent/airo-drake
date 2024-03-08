@@ -6,8 +6,8 @@ from pydrake.math import RigidTransform, RotationMatrix
 
 def visualize_frame(
     meshcat: Meshcat,
+    name: str,
     transform: RigidTransform | HomogeneousMatrixType,
-    path: str,
     length: float = 0.1,
     radius: float = 0.002,
     opacity: float = 1.0,
@@ -16,14 +16,14 @@ def visualize_frame(
 
     Args:
         transform: The 6D pose / transform of the frame to visualize.
+        name: A name or path for the frame in the MeshCat hierarchy, can be used to delete it later.
         meshcat: The MeshCat instance to add the visualization to.
-        path: A name or path for the frame in the MeshCat hierarchy, can be used to delete it later.
         length: Length of each axis in the triad.
         radius: Radius of each axis cylinder.
         opacity: Opacity for the axis colors.
     """
 
-    meshcat.SetTransform(path, transform)
+    meshcat.SetTransform(name, transform)
     axis_labels = ["x-axis", "y-axis", "z-axis"]
     axis_colors = [
         Rgba(1, 0, 0, opacity),
@@ -37,5 +37,5 @@ def visualize_frame(
     ]
 
     for transform, color, label in zip(axis_transforms, axis_colors, axis_labels):
-        meshcat.SetTransform(f"{path}/{label}", transform)
-        meshcat.SetObject(f"{path}/{label}", Cylinder(radius, length), color)
+        meshcat.SetTransform(f"{name}/{label}", transform)
+        meshcat.SetObject(f"{name}/{label}", Cylinder(radius, length), color)
