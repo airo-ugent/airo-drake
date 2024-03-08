@@ -18,7 +18,7 @@ classifiers = [
   "Operating System :: OS Independent",
 ]
 
-dependencies = ["airo-models", "drake", "ur-analytic-ik>=0.0.4", "loguru"]
+dependencies = ["airo-models>=0.0.8", "drake", "ur-analytic-ik>=0.0.4", "loguru"]
 
 [project.urls]
 Homepage = "https://github.com/airo-ugent/airo-drake"

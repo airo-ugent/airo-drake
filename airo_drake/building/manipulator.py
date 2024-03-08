@@ -20,6 +20,7 @@ def add_manipulator(
     gripper_name: str,
     arm_transform: HomogeneousMatrixType | None = None,
     gripper_transform: HomogeneousMatrixType | None = None,
+    static_gripper: bool = False,
 ) -> Tuple[ModelInstanceIndex, ModelInstanceIndex]:
     """Add a manipulator (a robot arm with a gripper) to the robot diagram builder.
     Looks up the URDF files for the robot and gripper and welds them together.
@@ -33,6 +34,7 @@ def add_manipulator(
         gripper_name: The name of the gripper, must be known by airo-models
         arm_transform: The transform of the robot arm, if None, we use supply a robot-specific default.
         gripper_transform: The transform of the gripper, if None, we supply a default for the robot-gripper pair.
+        static_gripper: If True, will fix all gripper joints to their default. Useful when you don't want the gripper DoFs in the plant.
 
     Returns:
         The robot and gripper index.
@@ -47,6 +49,14 @@ def add_manipulator(
     gripper_urdf_path = airo_models.get_urdf_path(gripper_name)
 
     arm_index = parser.AddModels(arm_urdf_path)[0]
+
+    if static_gripper:
+        gripper_urdf = airo_models.urdf.read_urdf(gripper_urdf_path)
+        airo_models.urdf.make_static(gripper_urdf)
+        gripper_urdf_path = airo_models.urdf.write_urdf_to_tempfile(
+            gripper_urdf, gripper_urdf_path, prefix=f"{gripper_name}_static_"
+        )
+
     gripper_index = parser.AddModels(gripper_urdf_path)[0]
 
     # Weld some frames together
