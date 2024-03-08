@@ -40,6 +40,18 @@ def calculate_joint_path_distances(path: JointPathType) -> np.ndarray:
     return np.linalg.norm(np.diff(path, axis=0), axis=1)
 
 
+def calculate_joint_path_length(path: JointPathType) -> float:
+    """Calculate the length of a joint path.
+
+    Args:
+        path: A path of joint configurations.
+
+    Returns:
+        The length of the joint path.
+    """
+    return np.sum(calculate_joint_path_distances(path))
+
+
 def calculate_joint_path_outlier_threshold(distances: np.ndarray, iqr_multiplier: float = 20.0) -> float:
     """Calculate a threshold for detecting unusually large jumps in a joint path.
 

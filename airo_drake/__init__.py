@@ -9,6 +9,7 @@ from airo_drake.building.manipulator import X_URBASE_ROSBASE, X_URTOOL0_ROBOTIQ,
 from airo_drake.building.meshcat import add_meshcat
 from airo_drake.path.analysis import (
     calculate_joint_path_distances,
+    calculate_joint_path_length,
     calculate_joint_path_outlier_threshold,
     create_paths_from_closest_solutions,
     find_closest_configuration,
@@ -35,6 +36,7 @@ __all__ = [
     "time_parametrize_toppra",
     "discretize_drake_joint_trajectory",
     "calculate_joint_path_outlier_threshold",
+    "calculate_joint_path_length",
     "joint_path_has_large_jumps",
     "find_closest_configuration",
     "create_paths_from_closest_solutions",
