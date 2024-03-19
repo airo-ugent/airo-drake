@@ -15,10 +15,10 @@ from airo_drake.path.analysis import (
     joint_path_has_large_jumps,
 )
 from airo_drake.path.processing import (
-    create_paths_from_closest_solutions,
-    calculate_path_ik_solutions,
     calculate_joint_paths,
+    calculate_path_ik_solutions,
     calculate_valid_joint_paths,
+    create_paths_from_closest_solutions,
 )
 from airo_drake.scene import DualArmScene, SingleArmScene
 from airo_drake.time_parametrization.toppra import time_parametrize_toppra

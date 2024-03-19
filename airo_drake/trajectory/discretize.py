@@ -1,5 +1,5 @@
 import numpy as np
-from airo_typing import JointPathContainer, SingleArmTrajectory, PoseTrajectory
+from airo_typing import JointPathContainer, PoseTrajectory, SingleArmTrajectory
 from pydrake.trajectories import Trajectory
 
 
@@ -12,7 +12,6 @@ def discretize_drake_joint_trajectory(joint_trajectory: Trajectory, steps: int =
     joint_path = JointPathContainer(positions=np.array(positions))
     joint_trajectory_discretized = SingleArmTrajectory(times_uniform, joint_path)
     return joint_trajectory_discretized
-
 
 
 def discretize_drake_pose_trajectory(pose_trajectory: Trajectory, steps: int = 100) -> PoseTrajectory:

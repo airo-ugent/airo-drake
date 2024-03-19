@@ -1,11 +1,12 @@
 import numpy as np
 from airo_typing import (
+    InverseKinematicsFunctionType,
+    JointConfigurationCheckerType,
     JointConfigurationType,
     JointPathType,
     PosePathType,
-    JointConfigurationCheckerType,
-    InverseKinematicsFunctionType,
 )
+
 from airo_drake import joint_path_has_large_jumps
 from airo_drake.path.analysis import find_closest_configuration
 
