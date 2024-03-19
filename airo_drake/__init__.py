@@ -11,13 +11,18 @@ from airo_drake.path.analysis import (
     calculate_joint_path_distances,
     calculate_joint_path_length,
     calculate_joint_path_outlier_threshold,
-    create_paths_from_closest_solutions,
     find_closest_configuration,
     joint_path_has_large_jumps,
 )
+from airo_drake.path.processing import (
+    create_paths_from_closest_solutions,
+    calculate_path_ik_solutions,
+    calculate_joint_paths,
+    calculate_valid_joint_paths,
+)
 from airo_drake.scene import DualArmScene, SingleArmScene
 from airo_drake.time_parametrization.toppra import time_parametrize_toppra
-from airo_drake.trajectory.discretize import discretize_drake_joint_trajectory
+from airo_drake.trajectory.discretize import discretize_drake_joint_trajectory, discretize_drake_pose_trajectory
 from airo_drake.visualization.frame import visualize_frame
 from airo_drake.visualization.joints import animate_joint_configurations, animate_joint_trajectory
 
@@ -35,10 +40,14 @@ __all__ = [
     "animate_joint_trajectory",
     "time_parametrize_toppra",
     "discretize_drake_joint_trajectory",
+    "discretize_drake_pose_trajectory",
     "calculate_joint_path_outlier_threshold",
     "calculate_joint_path_length",
     "joint_path_has_large_jumps",
     "find_closest_configuration",
-    "create_paths_from_closest_solutions",
     "calculate_joint_path_distances",
+    "create_paths_from_closest_solutions",
+    "calculate_path_ik_solutions",
+    "calculate_joint_paths",
+    "calculate_valid_joint_paths",
 ]

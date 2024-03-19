@@ -12,22 +12,6 @@ def find_closest_configuration(
     return candidates_array[closest_index]
 
 
-def create_paths_from_closest_solutions(
-    path_joint_solutions: list[list[JointConfigurationType]],
-) -> list[JointPathType]:
-    """Constructs paths by iteratively connecting closest joint configurations."""
-
-    paths = []
-    start_configurations = path_joint_solutions[0]
-    for start_configuration in start_configurations:
-        path = [start_configuration]
-        for joint_solutions in path_joint_solutions[1:]:
-            closest_config = find_closest_configuration(path[-1], joint_solutions)
-            path.append(closest_config)
-        paths.append(np.array(path))
-    return paths
-
-
 def calculate_joint_path_distances(path: JointPathType) -> np.ndarray:
     """Calculate the distances between consecutive joint configurations in a joint path.
 
