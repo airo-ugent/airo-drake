@@ -7,6 +7,7 @@ from airo_drake.building.finish import finish_build
 from airo_drake.building.floor import add_floor
 from airo_drake.building.manipulator import X_URBASE_ROSBASE, X_URTOOL0_ROBOTIQ, add_manipulator
 from airo_drake.building.meshcat import add_meshcat
+from airo_drake.building.wall import add_wall
 from airo_drake.path.analysis import (
     calculate_joint_path_distances,
     calculate_joint_path_length,
@@ -28,6 +29,7 @@ from airo_drake.visualization.joints import animate_joint_configurations, animat
 
 __all__ = [
     "add_floor",
+    "add_wall",
     "add_manipulator",
     "X_URBASE_ROSBASE",
     "X_URTOOL0_ROBOTIQ",
