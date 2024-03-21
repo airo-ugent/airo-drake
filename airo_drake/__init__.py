@@ -23,9 +23,16 @@ from airo_drake.path.processing import (
 )
 from airo_drake.scene import DualArmScene, SingleArmScene
 from airo_drake.time_parametrization.toppra import time_parametrize_toppra
+from airo_drake.trajectory.concatenate import concatenate_drake_trajectories
 from airo_drake.trajectory.discretize import discretize_drake_joint_trajectory, discretize_drake_pose_trajectory
+from airo_drake.trajectory.interpolate import joint_trajectory_to_drake
+from airo_drake.trajectory.timing import shift_drake_trajectory_in_time
 from airo_drake.visualization.frame import visualize_frame
-from airo_drake.visualization.joints import animate_joint_configurations, animate_joint_trajectory
+from airo_drake.visualization.joints import (
+    animate_dual_joint_trajectory,
+    animate_joint_configurations,
+    animate_joint_trajectory,
+)
 
 __all__ = [
     "add_floor",
@@ -40,9 +47,13 @@ __all__ = [
     "visualize_frame",
     "animate_joint_configurations",
     "animate_joint_trajectory",
+    "animate_dual_joint_trajectory",
     "time_parametrize_toppra",
     "discretize_drake_joint_trajectory",
     "discretize_drake_pose_trajectory",
+    "joint_trajectory_to_drake",
+    "shift_drake_trajectory_in_time",
+    "concatenate_drake_trajectories",
     "calculate_joint_path_outlier_threshold",
     "calculate_joint_path_length",
     "joint_path_has_large_jumps",
