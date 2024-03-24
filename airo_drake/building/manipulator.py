@@ -1,5 +1,3 @@
-from typing import Tuple
-
 import airo_models
 import numpy as np
 from airo_typing import HomogeneousMatrixType
@@ -21,7 +19,7 @@ def add_manipulator(
     arm_transform: HomogeneousMatrixType | None = None,
     gripper_transform: HomogeneousMatrixType | None = None,
     static_gripper: bool = False,
-) -> Tuple[ModelInstanceIndex, ModelInstanceIndex]:
+) -> tuple[ModelInstanceIndex, ModelInstanceIndex]:
     """Add a manipulator (a robot arm with a gripper) to the robot diagram builder.
     Looks up the URDF files for the robot and gripper and welds them together.
     Also provides slightly opionatated default transforms for the welds.

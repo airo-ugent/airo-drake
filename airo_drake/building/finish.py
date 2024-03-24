@@ -1,5 +1,3 @@
-from typing import Optional, Tuple
-
 from pydrake.geometry import Meshcat
 from pydrake.planning import RobotDiagram, RobotDiagramBuilder
 from pydrake.systems.framework import Context
@@ -7,8 +5,8 @@ from pydrake.visualization import ApplyVisualizationConfig, VisualizationConfig
 
 
 def finish_build(
-    robot_diagram_builder: RobotDiagramBuilder, meshcat: Optional[Meshcat] = None
-) -> Tuple[RobotDiagram, Context]:
+    robot_diagram_builder: RobotDiagramBuilder, meshcat: Meshcat | None = None
+) -> tuple[RobotDiagram, Context]:
     """Finish building the robot diagram and create a context. The reason we create and force publish a context it so
     that you can see your robot models visualized in Meshcat. Also if a meshcat is provided, we enable some extra
     visualization such as contacts. We do this here because this can only be done after the plant is finalized.

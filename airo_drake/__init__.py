@@ -35,6 +35,7 @@ from airo_drake.visualization.joints import (
 
 from airo_drake.trajectory.timing import shift_drake_trajectory_in_time  # isort:skip
 
+
 __all__ = [
     "add_floor",
     "add_wall",
