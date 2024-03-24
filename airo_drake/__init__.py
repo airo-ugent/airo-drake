@@ -3,6 +3,11 @@
 # but for building and many toolings, you still need to have __init__ files (at least in the root of the package).
 # e.g. if you remove this init file and try to build with pip install .
 # you won't be able to import the dummy module.
+
+
+# We disable isort for the entire __init__.py file, because the order of imports is important here.
+# If a function depends on another function, the dependent function should be imported after the function it depends on.
+# isort: skip_file
 from airo_drake.building.finish import finish_build
 from airo_drake.building.floor import add_floor
 from airo_drake.building.manipulator import X_URBASE_ROSBASE, X_URTOOL0_ROBOTIQ, add_manipulator
@@ -22,8 +27,9 @@ from airo_drake.path.processing import (
     create_paths_from_closest_solutions,
 )
 from airo_drake.scene import DualArmScene, SingleArmScene
-from airo_drake.time_parametrization.toppra import time_parametrize_toppra
+from airo_drake.trajectory.timing import shift_drake_trajectory_in_time
 from airo_drake.trajectory.concatenate import concatenate_drake_trajectories
+from airo_drake.time_parametrization.toppra import time_parametrize_toppra
 from airo_drake.trajectory.discretize import discretize_drake_joint_trajectory, discretize_drake_pose_trajectory
 from airo_drake.trajectory.interpolate import joint_trajectory_to_drake
 from airo_drake.visualization.frame import visualize_frame
@@ -32,8 +38,6 @@ from airo_drake.visualization.joints import (
     animate_joint_configurations,
     animate_joint_trajectory,
 )
-
-from airo_drake.trajectory.timing import shift_drake_trajectory_in_time  # isort:skip
 
 
 __all__ = [
