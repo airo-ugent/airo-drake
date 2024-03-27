@@ -6,6 +6,7 @@ from airo_typing import (
     JointPathType,
     PosePathType,
 )
+from loguru import logger
 
 from airo_drake import joint_path_has_large_jumps
 from airo_drake.path.analysis import find_closest_configuration
@@ -28,6 +29,10 @@ def create_paths_from_closest_solutions(
     for start_configuration in start_configurations:
         path = [start_configuration]
         for joint_solutions in path_joint_solutions[1:]:
+            logger.info(f"len(joint_solutions): {len(joint_solutions)}")
+            if len(joint_solutions) == 0:
+                logger.warn("Could not create paths, one of the states has no joint solutions.")
+                return []
             closest_config = find_closest_configuration(path[-1], joint_solutions)
             path.append(closest_config)
         paths.append(np.array(path))
