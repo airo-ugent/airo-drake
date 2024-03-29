@@ -29,9 +29,9 @@ def create_paths_from_closest_solutions(
     for start_configuration in start_configurations:
         path = [start_configuration]
         for joint_solutions in path_joint_solutions[1:]:
-            logger.info(f"len(joint_solutions): {len(joint_solutions)}")
+            # logger.info(f"len(joint_solutions): {len(joint_solutions)}")
             if len(joint_solutions) == 0:
-                logger.warn("Could not create paths, one of the states has no joint solutions.")
+                logger.warning("Could not create paths, one of the states has no joint solutions.")
                 return []
             closest_config = find_closest_configuration(path[-1], joint_solutions)
             path.append(closest_config)
