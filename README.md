@@ -2,7 +2,7 @@
 Python package to simplify working with [Drake](https://drake.mit.edu/) in combination with  [`airo-mono`](https://github.com/airo-ugent/airo-mono).
 
 **Key motivation:**
-  - 🔋**Bateries included:** Drake is a powerful robotics toolbox, but it can have a steep learning curve.
+  - 🔋**Batteries included:** Drake is a powerful robotics toolbox, but it can have a steep learning curve.
 If you've worked with Drake, you likely ended up deep in the [C++ documentation](https://drake.mit.edu/doxygen_cxx/index.html) or in Russ Tedrake's [manipulation repo](https://github.com/RussTedrake/manipulation) looking for guidance. `airo-drake` aims to be a *batteries included* Python package to get you up and running quickly with your own robot scenes in Drake!
 
 ## Overview 🧾
