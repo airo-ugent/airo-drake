@@ -23,8 +23,8 @@ def filter_collisions_between_all_body_pairs(
         filtered: Whether or not to filter collisions between these bodies."""
 
     body_combinations = itertools.product(body_indices_one, body_indices_two)
-    for body_index_arm, body_index_floor in body_combinations:
-        collision_checker.SetCollisionFilteredBetween(body_index_arm, body_index_floor, filtered)
+    for body_index_1, body_index_2 in body_combinations:
+        collision_checker.SetCollisionFilteredBetween(body_index_1, body_index_2, filtered)
 
 
 def list_collisions_between_bodies(
