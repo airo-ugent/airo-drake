@@ -38,6 +38,10 @@ from airo_drake.visualization.joints import (
     animate_joint_configurations,
     animate_joint_trajectory,
 )
+from airo_drake.collision.collision_checking import (
+    filter_collisions_between_all_body_pairs,
+    list_collisions_between_bodies,
+)
 
 
 __all__ = [
@@ -69,4 +73,6 @@ __all__ = [
     "calculate_path_ik_solutions",
     "calculate_joint_paths",
     "calculate_valid_joint_paths",
+    "filter_collisions_between_all_body_pairs",
+    "list_collisions_between_bodies",
 ]
