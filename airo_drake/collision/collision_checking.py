@@ -10,8 +10,7 @@ def filter_collisions_between_all_body_pairs(
     collision_checker: SceneGraphCollisionChecker,
     body_indices_one: List[BodyIndex],
     body_indices_two: List[BodyIndex],
-    *,
-    filtered: bool
+    filtered: bool = True,
 ) -> None:
     """Enable or disable collision filtering between all pairs of the bodies listed in body_indices_one and body_indices_two.
     When collision filtering is enabled for two bodies, they are allowed to collide.
@@ -20,7 +19,7 @@ def filter_collisions_between_all_body_pairs(
         collision_checker: The collision checker instance to alter.
         body_indices_one: A list of body indices.
         body_indices_two: A list of body indices.
-        filtered: Whether or not to filter collisions between these bodies."""
+        filtered: Whether to filter collisions between these bodies."""
 
     body_combinations = itertools.product(body_indices_one, body_indices_two)
     for body_index_1, body_index_2 in body_combinations:
