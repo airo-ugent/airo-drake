@@ -46,9 +46,8 @@ def list_collisions_between_bodies(
     collision_types = robot_clearance.collision_types()
     distances = robot_clearance.distances()
 
-    return list(
-        map(
-            lambda tup: (tup[0], tup[1], tup[2] != RobotCollisionType.kEnvironmentCollision),
-            filter(lambda tup: tup[3] <= 0.0, zip(indices_one, indices_two, collision_types, distances)),
-        )
-    )
+    return [
+        (tup[0], tup[1], tup[2] != RobotCollisionType.kEnvironmentCollision)
+        for tup in zip(indices_one, indices_two, collision_types, distances)
+        if tup[3] <= 0.0
+    ]
