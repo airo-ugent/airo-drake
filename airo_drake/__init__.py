@@ -42,6 +42,7 @@ from airo_drake.collision.collision_checking import (
     filter_collisions_between_all_body_pairs,
     list_collisions_between_bodies,
 )
+from airo_drake.exceptions import TimeParameterizationError
 
 
 __all__ = [
@@ -75,4 +76,5 @@ __all__ = [
     "calculate_valid_joint_paths",
     "filter_collisions_between_all_body_pairs",
     "list_collisions_between_bodies",
+    "TimeParameterizationError",
 ]
