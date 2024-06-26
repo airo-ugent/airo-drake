@@ -20,6 +20,9 @@ def time_parametrize_toppra(
         joints: A joint path or trajectory.
         joint_speed_limit: The maximum joint speed in rad/s.
         joint_acceleration_limit: The maximum joint acceleration in rad/s^2.
+
+    Raises:
+        TimeParameterizationError: The path could not be time parameterized.
     """
     if isinstance(joints, Trajectory):
         joint_trajectory = joints
