@@ -11,6 +11,7 @@
 from airo_drake.building.finish import finish_build
 from airo_drake.building.floor import add_floor
 from airo_drake.building.manipulator import X_URBASE_ROSBASE, X_URTOOL0_ROBOTIQ, add_manipulator
+from airo_drake.building.mobile_platform import add_mobile_platform, attach_mobile_platform_to_world
 from airo_drake.building.meshcat import add_meshcat
 from airo_drake.building.wall import add_wall
 from airo_drake.path.analysis import (
@@ -26,7 +27,7 @@ from airo_drake.path.processing import (
     calculate_valid_joint_paths,
     create_paths_from_closest_solutions,
 )
-from airo_drake.scene import DualArmScene, SingleArmScene
+from airo_drake.scene import DualArmScene, SingleArmScene, MobilePlatformWithSingleArmScene
 from airo_drake.trajectory.timing import shift_drake_trajectory_in_time
 from airo_drake.trajectory.concatenate import concatenate_drake_trajectories
 from airo_drake.time_parametrization.toppra import time_parametrize_toppra
@@ -48,12 +49,15 @@ __all__ = [
     "add_floor",
     "add_wall",
     "add_manipulator",
+    "add_mobile_platform",
+    "attach_mobile_platform_to_world",
     "X_URBASE_ROSBASE",
     "X_URTOOL0_ROBOTIQ",
     "add_meshcat",
     "finish_build",
     "SingleArmScene",
     "DualArmScene",
+    "MobilePlatformWithSingleArmScene",
     "visualize_frame",
     "animate_joint_configurations",
     "animate_joint_trajectory",

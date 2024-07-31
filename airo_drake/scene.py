@@ -6,6 +6,17 @@ from pydrake.planning import RobotDiagram
 
 
 @dataclass
+class MobilePlatformWithSingleArmScene:
+    """The most important objects when using Drake with a single robot arm mounted on a mobile platform."""
+
+    robot_diagram: RobotDiagram
+    mobile_platform_index: ModelInstanceIndex
+    arm_index: ModelInstanceIndex
+    gripper_index: ModelInstanceIndex | None = None
+    meshcat: Meshcat | None = None
+
+
+@dataclass
 class SingleArmScene:
     """The most important objects when using Drake with a single robot arm."""
 

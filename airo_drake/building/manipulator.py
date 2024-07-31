@@ -2,7 +2,7 @@ import airo_models
 import numpy as np
 from airo_typing import HomogeneousMatrixType
 from pydrake.math import RigidTransform, RollPitchYaw
-from pydrake.multibody.tree import ModelInstanceIndex
+from pydrake.multibody.tree import ModelInstanceIndex, Frame
 from pydrake.planning import RobotDiagramBuilder
 
 # X_URBASE_ROSBASE is the 180 rotation between ROS URDF base and the UR control box base
@@ -13,12 +13,13 @@ X_URTOOL0_ROBOTIQ = RigidTransform(rpy=RollPitchYaw([0, 0, np.pi / 2]), p=[0, 0,
 
 
 def add_manipulator(
-    robot_diagram_builder: RobotDiagramBuilder,
-    name: str,
-    gripper_name: str,
-    arm_transform: HomogeneousMatrixType | None = None,
-    gripper_transform: HomogeneousMatrixType | None = None,
-    static_gripper: bool = False,
+        robot_diagram_builder: RobotDiagramBuilder,
+        name: str,
+        gripper_name: str,
+        arm_transform: HomogeneousMatrixType | None = None,
+        gripper_transform: HomogeneousMatrixType | None = None,
+        static_gripper: bool = False,
+        parent_frame: Frame | None = None,
 ) -> tuple[ModelInstanceIndex, ModelInstanceIndex]:
     """Add a manipulator (a robot arm with a gripper) to the robot diagram builder.
     Looks up the URDF files for the robot and gripper and welds them together.
@@ -33,6 +34,7 @@ def add_manipulator(
         arm_transform: The transform of the robot arm, if None, we use supply a robot-specific default.
         gripper_transform: The transform of the gripper, if None, we supply a default for the robot-gripper pair.
         static_gripper: If True, will fix all gripper joints to their default. Useful when you don't want the gripper DoFs in the plant.
+        parent_frame: The parent frame to weld to. If None, we use the world frame of the plant.
 
     Returns:
         The robot and gripper index.
@@ -79,7 +81,9 @@ def add_manipulator(
     else:
         gripper_rigid_transform = RigidTransform(gripper_transform)
 
-    plant.WeldFrames(world_frame, arm_frame, arm_rigid_transform)
+    if parent_frame is None:
+        parent_frame = world_frame
+    plant.WeldFrames(parent_frame, arm_frame, arm_rigid_transform)
     plant.WeldFrames(arm_tool_frame, gripper_frame, gripper_rigid_transform)
 
     return arm_index, gripper_index
