@@ -10,8 +10,8 @@ def time_parametrize_toppra_mobile_platform(
         poses: JointPathType,  # TODO type
         linear_velocity_limit: float = 1.0,
         angular_velocity_limit: float = np.pi / 8,
-        linear_acceleration_limit: float = 0.0025,  # TODO value
-        angular_acceleration_limit: float = 0.0025,  # TODO value
+        linear_acceleration_limit: float = 0.25,
+        angular_acceleration_limit: float = 0.025
 ) -> PathParameterizedTrajectory:
     """Recalculate the timing of a path or trajectory to respect linear and angular velocity and acceleration limits
     using TOPP-RA.
