@@ -1,4 +1,4 @@
-from typing import Tuple
+from typing import Tuple, List
 
 import airo_models
 import numpy as np
@@ -25,7 +25,7 @@ def add_mobile_platform(
         roof_width: float = 0.525,
         roof_thickness: float = 0.03,
         brick_size: float = 0.233
-) -> ModelInstanceIndex:
+) -> Tuple[ModelInstanceIndex, List[ModelInstanceIndex]]:
     """Add a mobile platform on wheels to the robot diagram builder.
 
     Currently, this method specifically loads the KELO Robile platform bricks.
@@ -48,7 +48,7 @@ def add_mobile_platform(
         brick_size: The size (width and length) of a KELO brick.
 
     Returns:
-        The mobile platform index.
+        The mobile platform index and the indices of the parts that make up the mobile platform.
     """
 
     plant = robot_diagram_builder.plant()
@@ -65,24 +65,29 @@ def add_mobile_platform(
     mobi_model_index = parser.AddModels(mobi_urdf_path)[0]
     robot_root_frame = plant.GetFrameByName("base_link", mobi_model_index)
 
+    mobi_part_indices = []
+
     # robot_transform: relative to world
     # drive_transforms: relative to robot_transform
     for drive_index, drive_transform in enumerate(drive_transforms):
         brick_index = parser.AddModels(airo_models.get_urdf_path("kelo_robile_wheel"))[0]
         brick_frame = plant.GetFrameByName("base_link", brick_index)
         plant.WeldFrames(robot_root_frame, brick_frame, drive_transform)
+        mobi_part_indices.append(brick_index)
 
     battery_transform = RigidTransform(p=[brick_size * battery_position[0], brick_size * battery_position[1], 0],
                                        rpy=RollPitchYaw([0, 0, 0]))
     battery_index = parser.AddModels(airo_models.get_urdf_path("kelo_robile_battery"))[0]
     battery_frame = plant.GetFrameByName("base_link", battery_index)
     plant.WeldFrames(robot_root_frame, battery_frame, battery_transform)
+    mobi_part_indices.append(battery_index)
 
     cpu_transform = RigidTransform(p=[brick_size * cpu_position[0], brick_size * cpu_position[1], 0],
                                    rpy=RollPitchYaw([0, 0, 0]))
     cpu_index = parser.AddModels(airo_models.get_urdf_path("kelo_robile_cpu"))[0]
     cpu_frame = plant.GetFrameByName("base_link", cpu_index)
     plant.WeldFrames(robot_root_frame, cpu_frame, cpu_transform)
+    mobi_part_indices.append(cpu_index)
 
     front_brick_position = np.max([brick_size * p[0] for p in drive_positions]) + brick_size / 2
 
@@ -98,6 +103,7 @@ def add_mobile_platform(
         side_index = parser.AddModels(side_urdf_path)[0]
         side_frame = plant.GetFrameByName("base_link", side_index)
         plant.WeldFrames(robot_root_frame, side_frame, side_transform)
+        mobi_part_indices.append(side_index)
 
     roof_length = side_length
     roof_length_half = 0.5 * roof_length
@@ -108,20 +114,26 @@ def add_mobile_platform(
     roof_index = parser.AddModels(roof_urdf_path)[0]
     roof_frame = plant.GetFrameByName("base_link", roof_index)
     plant.WeldFrames(robot_root_frame, roof_frame, roof_transform)
+    mobi_part_indices.append(roof_index)
 
-    return mobi_model_index
+    return mobi_model_index, mobi_part_indices
 
 
-def attach_mobile_platform_to_world(robot_diagram_builder: RobotDiagramBuilder, mobi_model_index: ModelInstanceIndex):
+def attach_mobile_platform_to_world(robot_diagram_builder: RobotDiagramBuilder, mobi_model_index: ModelInstanceIndex,
+                                    static_platform: bool):
     """Attach the mobile platform to the world frame with a planar joint. This allows the mobile platform to
     move around by setting the (x, y, theta) values of the joint.
 
     Args:
         robot_diagram_builder: The robot diagram builder to which the platform will be added.
-        mobi_model_index: The mobile platform index."""
+        mobi_model_index: The mobile platform index.
+        static_platform: If true, will weld. If False, will make a joint."""
     plant = robot_diagram_builder.plant()
 
     mobi_frame = plant.GetFrameByName("base_link", mobi_model_index)
 
-    platform_planar_joint = PlanarJoint("mobi_joint", plant.world_frame(), mobi_frame)
-    plant.AddJoint(platform_planar_joint)
+    if not static_platform:
+        platform_planar_joint = PlanarJoint("mobi_joint", plant.world_frame(), mobi_frame)
+        plant.AddJoint(platform_planar_joint)
+    else:
+        plant.WeldFrames(plant.world_frame(), mobi_frame)
