@@ -11,6 +11,7 @@ class MobilePlatformWithSingleArmScene:
 
     robot_diagram: RobotDiagram
     mobile_platform_index: ModelInstanceIndex
+    mobile_platform_part_indices: List[ModelInstanceIndex]
     arm_index: ModelInstanceIndex | None = None
     gripper_index: ModelInstanceIndex | None = None
     meshcat: Meshcat | None = None
