@@ -62,6 +62,7 @@ __all__ = [
     "animate_joint_configurations",
     "animate_joint_trajectory",
     "animate_dual_joint_trajectory",
+    "animate_mobile_platform_trajectory",
     "time_parametrize_toppra",
     "time_parametrize_toppra_mobile_platform",
     "discretize_drake_joint_trajectory",
