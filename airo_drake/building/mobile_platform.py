@@ -1,4 +1,4 @@
-from typing import Tuple, List
+from typing import List, Tuple
 
 import airo_models
 import numpy as np
@@ -15,16 +15,20 @@ X_URTOOL0_ROBOTIQ = RigidTransform(rpy=RollPitchYaw([0, 0, np.pi / 2]), p=[0, 0,
 
 
 def add_mobile_platform(
-        robot_diagram_builder: RobotDiagramBuilder,
-        drive_positions: Tuple[Vector2DType] = (np.array([1, -0.5]), np.array([1, 0.5]), np.array([-1, -0.5]),
-                                                np.array([-1, 0.5])),
-        battery_position: Vector2DType = np.array([0, 0.5]),
-        cpu_position: Vector2DType = np.array([0, -0.5]),
-        side_height: float = 0.43,
-        side_length: float = 0.69,
-        roof_width: float = 0.525,
-        roof_thickness: float = 0.03,
-        brick_size: float = 0.233
+    robot_diagram_builder: RobotDiagramBuilder,
+    drive_positions: Tuple[Vector2DType] = (
+        np.array([1, -0.5]),
+        np.array([1, 0.5]),
+        np.array([-1, -0.5]),
+        np.array([-1, 0.5]),
+    ),
+    battery_position: Vector2DType = np.array([0, 0.5]),
+    cpu_position: Vector2DType = np.array([0, -0.5]),
+    side_height: float = 0.43,
+    side_length: float = 0.69,
+    roof_width: float = 0.525,
+    roof_thickness: float = 0.03,
+    brick_size: float = 0.233,
 ) -> Tuple[ModelInstanceIndex, List[ModelInstanceIndex]]:
     """Add a mobile platform on wheels to the robot diagram builder.
 
@@ -58,8 +62,8 @@ def add_mobile_platform(
     mobi_urdf_path = airo_models.get_urdf_path("kelo_robile")
 
     drive_transforms = [
-        RigidTransform(p=[brick_size * p[0], brick_size * p[1], 0], rpy=RollPitchYaw([0, 0, 0])) for p in
-        drive_positions
+        RigidTransform(p=[brick_size * p[0], brick_size * p[1], 0], rpy=RollPitchYaw([0, 0, 0]))
+        for p in drive_positions
     ]
 
     mobi_model_index = parser.AddModels(mobi_urdf_path)[0]
@@ -75,15 +79,17 @@ def add_mobile_platform(
         plant.WeldFrames(robot_root_frame, brick_frame, drive_transform)
         mobi_part_indices.append(brick_index)
 
-    battery_transform = RigidTransform(p=[brick_size * battery_position[0], brick_size * battery_position[1], 0],
-                                       rpy=RollPitchYaw([0, 0, 0]))
+    battery_transform = RigidTransform(
+        p=[brick_size * battery_position[0], brick_size * battery_position[1], 0], rpy=RollPitchYaw([0, 0, 0])
+    )
     battery_index = parser.AddModels(airo_models.get_urdf_path("kelo_robile_battery"))[0]
     battery_frame = plant.GetFrameByName("base_link", battery_index)
     plant.WeldFrames(robot_root_frame, battery_frame, battery_transform)
     mobi_part_indices.append(battery_index)
 
-    cpu_transform = RigidTransform(p=[brick_size * cpu_position[0], brick_size * cpu_position[1], 0],
-                                   rpy=RollPitchYaw([0, 0, 0]))
+    cpu_transform = RigidTransform(
+        p=[brick_size * cpu_position[0], brick_size * cpu_position[1], 0], rpy=RollPitchYaw([0, 0, 0])
+    )
     cpu_index = parser.AddModels(airo_models.get_urdf_path("kelo_robile_cpu"))[0]
     cpu_frame = plant.GetFrameByName("base_link", cpu_index)
     plant.WeldFrames(robot_root_frame, cpu_frame, cpu_transform)
@@ -119,8 +125,9 @@ def add_mobile_platform(
     return mobi_model_index, mobi_part_indices
 
 
-def attach_mobile_platform_to_world(robot_diagram_builder: RobotDiagramBuilder, mobi_model_index: ModelInstanceIndex,
-                                    static_platform: bool):
+def attach_mobile_platform_to_world(
+    robot_diagram_builder: RobotDiagramBuilder, mobi_model_index: ModelInstanceIndex, static_platform: bool
+):
     """Attach the mobile platform to the world frame with a planar joint. This allows the mobile platform to
     move around by setting the (x, y, theta) values of the joint.
 

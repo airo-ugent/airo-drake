@@ -1,10 +1,9 @@
 from dataclasses import dataclass
+from typing import List
 
 from pydrake.geometry import Meshcat
 from pydrake.multibody.tree import ModelInstanceIndex
 from pydrake.planning import RobotDiagram
-
-from typing import List
 
 
 @dataclass

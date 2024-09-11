@@ -2,7 +2,7 @@ import airo_models
 import numpy as np
 from airo_typing import HomogeneousMatrixType
 from pydrake.math import RigidTransform, RollPitchYaw
-from pydrake.multibody.tree import ModelInstanceIndex, Frame
+from pydrake.multibody.tree import Frame, ModelInstanceIndex
 from pydrake.planning import RobotDiagramBuilder
 
 # X_URBASE_ROSBASE is the 180 rotation between ROS URDF base and the UR control box base
@@ -13,14 +13,14 @@ X_URTOOL0_ROBOTIQ = RigidTransform(rpy=RollPitchYaw([0, 0, np.pi / 2]), p=[0, 0,
 
 
 def add_manipulator(
-        robot_diagram_builder: RobotDiagramBuilder,
-        name: str,
-        gripper_name: str,
-        arm_transform: HomogeneousMatrixType | None = None,
-        gripper_transform: HomogeneousMatrixType | None = None,
-        static_arm: bool = False,
-        static_gripper: bool = False,
-        parent_frame: Frame | None = None,
+    robot_diagram_builder: RobotDiagramBuilder,
+    name: str,
+    gripper_name: str,
+    arm_transform: HomogeneousMatrixType | None = None,
+    gripper_transform: HomogeneousMatrixType | None = None,
+    static_arm: bool = False,
+    static_gripper: bool = False,
+    parent_frame: Frame | None = None,
 ) -> tuple[ModelInstanceIndex, ModelInstanceIndex]:
     """Add a manipulator (a robot arm with a gripper) to the robot diagram builder.
     Looks up the URDF files for the robot and gripper and welds them together.
@@ -53,9 +53,7 @@ def add_manipulator(
     if static_arm:
         arm_urdf = airo_models.urdf.read_urdf(arm_urdf_path)
         airo_models.urdf.make_static(arm_urdf)
-        arm_urdf_path = airo_models.urdf.write_urdf_to_tempfile(
-            arm_urdf, arm_urdf_path, prefix=f"{name}_static_"
-        )
+        arm_urdf_path = airo_models.urdf.write_urdf_to_tempfile(arm_urdf, arm_urdf_path, prefix=f"{name}_static_")
 
     arm_index = parser.AddModels(arm_urdf_path)[0]
 

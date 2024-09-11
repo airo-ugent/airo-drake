@@ -6,12 +6,12 @@ from pydrake.trajectories import PathParameterizedTrajectory, PiecewisePolynomia
 
 
 def time_parametrize_toppra_mobile_platform(
-        plant: MultibodyPlant,
-        poses: JointPathType,  # TODO type
-        linear_velocity_limit: float = 1.0,
-        angular_velocity_limit: float = np.pi / 8,
-        linear_acceleration_limit: float = 0.25,
-        angular_acceleration_limit: float = 0.025
+    plant: MultibodyPlant,
+    poses: JointPathType,  # TODO type
+    linear_velocity_limit: float = 1.0,
+    angular_velocity_limit: float = np.pi / 8,
+    linear_acceleration_limit: float = 0.25,
+    angular_acceleration_limit: float = 0.025,
 ) -> PathParameterizedTrajectory:
     """Recalculate the timing of a path or trajectory to respect linear and angular velocity and acceleration limits
     using TOPP-RA.
@@ -36,7 +36,8 @@ def time_parametrize_toppra_mobile_platform(
     gridpoints = Toppra.CalcGridPoints(pose_trajectory, CalcGridPointsOptions())
 
     acceleration_limits_lower = np.array(
-        [-linear_acceleration_limit, -linear_acceleration_limit, -angular_acceleration_limit])
+        [-linear_acceleration_limit, -linear_acceleration_limit, -angular_acceleration_limit]
+    )
     acceleration_limits_upper = -acceleration_limits_lower
     velocity_limits_lower = np.array([-linear_velocity_limit, -linear_velocity_limit, -angular_velocity_limit])
     velocity_limits_upper = -velocity_limits_lower
@@ -55,10 +56,10 @@ def time_parametrize_toppra_mobile_platform(
 
 
 def time_parametrize_toppra(
-        plant: MultibodyPlant,
-        joints: JointPathType | Trajectory,
-        joint_speed_limit: float = 2.0,  # Max 180 degrees/s ~ 3.14 rad/s
-        joint_acceleration_limit: float = 4.0,  # UR recommends < 800 degrees/s^2 ~ 13.9 rad/s^2
+    plant: MultibodyPlant,
+    joints: JointPathType | Trajectory,
+    joint_speed_limit: float = 2.0,  # Max 180 degrees/s ~ 3.14 rad/s
+    joint_acceleration_limit: float = 4.0,  # UR recommends < 800 degrees/s^2 ~ 13.9 rad/s^2
 ) -> PathParameterizedTrajectory:
     """Recalculate the timing of a path or trajectory to respect joint speed and acceleration limits using TOPP-RA.
 
