@@ -50,9 +50,9 @@ def time_parametrize_toppra_mobile_platform(
     if time_parametrization is None:
         raise ValueError("TOPP-RA failed to find a valid time parametrization.")
 
-    pose_trajectory = PathParameterizedTrajectory(pose_trajectory, time_parametrization)
+    pose_trajectory_ = PathParameterizedTrajectory(pose_trajectory, time_parametrization)
 
-    return pose_trajectory
+    return pose_trajectory_
 
 
 def time_parametrize_toppra(
