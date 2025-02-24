@@ -7,12 +7,6 @@ from pydrake.math import RigidTransform, RollPitchYaw
 from pydrake.multibody.tree import ModelInstanceIndex, PlanarJoint
 from pydrake.planning import RobotDiagramBuilder
 
-# X_URBASE_ROSBASE is the 180 rotation between ROS URDF base and the UR control box base
-X_URBASE_ROSBASE = RigidTransform(rpy=RollPitchYaw([0, 0, np.pi]), p=[0, 0, 0])  # type: ignore
-
-# 180 degree rotation and 1 cm (estimate) offset for the coupling / flange
-X_URTOOL0_ROBOTIQ = RigidTransform(rpy=RollPitchYaw([0, 0, np.pi / 2]), p=[0, 0, 0.01])  # type: ignore
-
 
 def add_mobile_platform(
     robot_diagram_builder: RobotDiagramBuilder,
@@ -28,6 +22,7 @@ def add_mobile_platform(
     side_length: float = 0.69,
     roof_width: float = 0.525,
     roof_thickness: float = 0.03,
+    back_panel_offset: float = 0.03,
     brick_size: float = 0.233,
 ) -> Tuple[ModelInstanceIndex, List[ModelInstanceIndex]]:
     """Add a mobile platform on wheels to the robot diagram builder.
@@ -49,6 +44,7 @@ def add_mobile_platform(
         side_length: The length (along X) of the mobile robot.
         roof_width: The width (along Y) of the mobile robot.
         roof_thickness: The thickness of the roof.
+        back_panel_offset: The offset of the back panel relative to the back of the drive bricks.
         brick_size: The size (width and length) of a KELO brick.
 
     Returns:
@@ -80,7 +76,9 @@ def add_mobile_platform(
         mobi_part_indices.append(brick_index)
 
     battery_transform = RigidTransform(
-        p=[brick_size * battery_position[0], brick_size * battery_position[1], 0], rpy=RollPitchYaw([0, 0, 0])  # type: ignore
+        p=np.array([brick_size * battery_position[0], brick_size * battery_position[1], 0]),
+        rpy=RollPitchYaw(np.zeros(3))
+        # type: ignore
     )
     battery_index = parser.AddModels(airo_models.get_urdf_path("kelo_robile_battery"))[0]
     battery_frame = plant.GetFrameByName("base_link", battery_index)
@@ -114,13 +112,25 @@ def add_mobile_platform(
     roof_length = side_length
     roof_length_half = 0.5 * roof_length
     roof_thickness_half = 0.5 * roof_thickness
-    roof_transform = RigidTransform(p=[front_brick_position - roof_length_half, 0, side_height + roof_thickness_half])  # type: ignore
+    roof_transform = RigidTransform(
+        p=[front_brick_position - roof_length_half, 0, side_height + roof_thickness_half]
+    )  # type: ignore
 
     roof_urdf_path = airo_models.box_urdf_path([roof_length, roof_width, 0.03], "roof")
     roof_index = parser.AddModels(roof_urdf_path)[0]
     roof_frame = plant.GetFrameByName("base_link", roof_index)
     plant.WeldFrames(robot_root_frame, roof_frame, roof_transform)
     mobi_part_indices.append(roof_index)
+
+    # Thickness of 6cm: panel + buttons, e.g., emergency stop.
+    back_urdf_path = airo_models.box_urdf_path([0.06, roof_width, side_height + roof_thickness], "back")
+    back_index = parser.AddModels(back_urdf_path)[0]
+    back_frame = plant.GetFrameByName("base_link", back_index)
+    back_transform = RigidTransform(
+        p=[front_brick_position - roof_length - back_panel_offset, 0, side_height_half]
+    )  # type: ignore
+    plant.WeldFrames(robot_root_frame, back_frame, back_transform)
+    mobi_part_indices.append(back_index)
 
     return mobi_model_index, mobi_part_indices
 

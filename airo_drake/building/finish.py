@@ -31,7 +31,7 @@ def finish_build(
         config = VisualizationConfig(publish_contacts=True, enable_alpha_sliders=True)
         ApplyVisualizationConfig(config, builder=builder, plant=plant, meshcat=meshcat)
 
-    robot_diagram = robot_diagram_builder.Build()
+    robot_diagram: RobotDiagram = robot_diagram_builder.Build()  # type: ignore
 
     context = robot_diagram.CreateDefaultContext()
     robot_diagram.ForcedPublish(context)
