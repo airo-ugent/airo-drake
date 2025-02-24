@@ -76,18 +76,15 @@ def add_mobile_platform(
         mobi_part_indices.append(brick_index)
 
     battery_transform = RigidTransform(
-        p=np.array([brick_size * battery_position[0], brick_size * battery_position[1], 0]),
-        rpy=RollPitchYaw(np.zeros(3))
-        # type: ignore
+        p=np.array([brick_size * battery_position[0], brick_size * battery_position[1], 0])
     )
     battery_index = parser.AddModels(airo_models.get_urdf_path("kelo_robile_battery"))[0]
     battery_frame = plant.GetFrameByName("base_link", battery_index)
     plant.WeldFrames(robot_root_frame, battery_frame, battery_transform)
     mobi_part_indices.append(battery_index)
 
-    cpu_transform = RigidTransform(
-        p=[brick_size * cpu_position[0], brick_size * cpu_position[1], 0], rpy=RollPitchYaw([0, 0, 0])  # type: ignore
-    )
+    cpu_transform = RigidTransform(p=np.array([brick_size * cpu_position[0], brick_size * cpu_position[1], 0]))
+
     cpu_index = parser.AddModels(airo_models.get_urdf_path("kelo_robile_cpu"))[0]
     cpu_frame = plant.GetFrameByName("base_link", cpu_index)
     plant.WeldFrames(robot_root_frame, cpu_frame, cpu_transform)
