@@ -24,6 +24,7 @@ def add_mobile_platform(
     roof_thickness: float = 0.03,
     back_panel_offset: float = 0.03,
     brick_size: float = 0.233,
+    wheel_from_floor_offset: float = 0.04,
 ) -> Tuple[ModelInstanceIndex, List[ModelInstanceIndex]]:
     """Add a mobile platform on wheels to the robot diagram builder.
 
@@ -46,6 +47,7 @@ def add_mobile_platform(
         roof_thickness: The thickness of the roof.
         back_panel_offset: The offset of the back panel relative to the back of the drive bricks.
         brick_size: The size (width and length) of a KELO brick.
+        wheel_from_floor_offset: The height of the bricks from the floor due to the wheels.
 
     Returns:
         The mobile platform index and the indices of the parts that make up the mobile platform.
@@ -58,7 +60,7 @@ def add_mobile_platform(
     mobi_urdf_path = airo_models.get_urdf_path("kelo_robile")
 
     drive_transforms = [
-        RigidTransform(p=[brick_size * p[0], brick_size * p[1], 0], rpy=RollPitchYaw([0, 0, 0]))  # type: ignore
+        RigidTransform(p=[brick_size * p[0], brick_size * p[1], wheel_from_floor_offset], rpy=RollPitchYaw([0, 0, 0]))  # type: ignore
         for p in drive_positions
     ]
 
@@ -76,14 +78,16 @@ def add_mobile_platform(
         mobi_part_indices.append(brick_index)
 
     battery_transform = RigidTransform(
-        p=np.array([brick_size * battery_position[0], brick_size * battery_position[1], 0])
+        p=np.array([brick_size * battery_position[0], brick_size * battery_position[1], wheel_from_floor_offset])
     )
     battery_index = parser.AddModels(airo_models.get_urdf_path("kelo_robile_battery"))[0]
     battery_frame = plant.GetFrameByName("base_link", battery_index)
     plant.WeldFrames(robot_root_frame, battery_frame, battery_transform)
     mobi_part_indices.append(battery_index)
 
-    cpu_transform = RigidTransform(p=np.array([brick_size * cpu_position[0], brick_size * cpu_position[1], 0]))
+    cpu_transform = RigidTransform(
+        p=np.array([brick_size * cpu_position[0], brick_size * cpu_position[1], wheel_from_floor_offset])
+    )
 
     cpu_index = parser.AddModels(airo_models.get_urdf_path("kelo_robile_cpu"))[0]
     cpu_frame = plant.GetFrameByName("base_link", cpu_index)
@@ -95,8 +99,8 @@ def add_mobile_platform(
     side_height_half = 0.5 * side_height
     side_length_half = 0.5 * side_length
     side_transforms = [
-        RigidTransform(p=[front_brick_position - side_length_half, -brick_size, side_height_half]),  # type: ignore
-        RigidTransform(p=[front_brick_position - side_length_half, brick_size, side_height_half]),  # type: ignore
+        RigidTransform(p=[front_brick_position - side_length_half, -brick_size, side_height_half + wheel_from_floor_offset]),  # type: ignore
+        RigidTransform(p=[front_brick_position - side_length_half, brick_size, side_height_half + wheel_from_floor_offset]),  # type: ignore
     ]
 
     for side_transform in side_transforms:
@@ -110,21 +114,23 @@ def add_mobile_platform(
     roof_length_half = 0.5 * roof_length
     roof_thickness_half = 0.5 * roof_thickness
     roof_transform = RigidTransform(
-        p=[front_brick_position - roof_length_half, 0, side_height + roof_thickness_half]
+        p=[front_brick_position - roof_length_half, 0, side_height + roof_thickness_half + wheel_from_floor_offset]
     )  # type: ignore
 
-    roof_urdf_path = airo_models.box_urdf_path([roof_length, roof_width, 0.03], "roof")
+    roof_urdf_path = airo_models.box_urdf_path([roof_length, roof_width, wheel_from_floor_offset + 0.03], "roof")
     roof_index = parser.AddModels(roof_urdf_path)[0]
     roof_frame = plant.GetFrameByName("base_link", roof_index)
     plant.WeldFrames(robot_root_frame, roof_frame, roof_transform)
     mobi_part_indices.append(roof_index)
 
     # Thickness of 6cm: panel + buttons, e.g., emergency stop.
-    back_urdf_path = airo_models.box_urdf_path([0.06, roof_width, side_height + roof_thickness], "back")
+    back_urdf_path = airo_models.box_urdf_path(
+        [0.06, roof_width, side_height + roof_thickness + wheel_from_floor_offset], "back"
+    )
     back_index = parser.AddModels(back_urdf_path)[0]
     back_frame = plant.GetFrameByName("base_link", back_index)
     back_transform = RigidTransform(
-        p=[front_brick_position - roof_length - back_panel_offset, 0, side_height_half]
+        p=[front_brick_position - roof_length - back_panel_offset, 0, side_height_half + wheel_from_floor_offset]
     )  # type: ignore
     plant.WeldFrames(robot_root_frame, back_frame, back_transform)
     mobi_part_indices.append(back_index)
