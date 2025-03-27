@@ -24,7 +24,7 @@ def add_mobile_platform(
     ),
     battery_position: Vector2DType = np.array([0, 0.5]),
     cpu_position: Vector2DType = np.array([0, -0.5]),
-    side_height: float = 0.43,
+    side_height: float = 0.68,
     side_length: float = 0.69,
     roof_width: float = 0.525,
     roof_thickness: float = 0.03,
