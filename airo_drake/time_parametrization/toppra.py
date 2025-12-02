@@ -4,6 +4,8 @@ from pydrake.multibody.optimization import CalcGridPointsOptions, Toppra
 from pydrake.multibody.plant import MultibodyPlant
 from pydrake.trajectories import PathParameterizedTrajectory, PiecewisePolynomial, Trajectory
 
+from airo_drake.exceptions import TimeParameterizationError
+
 
 def time_parametrize_toppra_mobile_platform(
     plant: MultibodyPlant,
@@ -68,6 +70,9 @@ def time_parametrize_toppra(
         joints: A joint path or trajectory.
         joint_speed_limit: The maximum joint speed in rad/s.
         joint_acceleration_limit: The maximum joint acceleration in rad/s^2.
+
+    Raises:
+        TimeParameterizationError: The path could not be time parameterized.
     """
     if isinstance(joints, Trajectory):
         joint_trajectory = joints
@@ -91,7 +96,7 @@ def time_parametrize_toppra(
     time_parametrization = toppra.SolvePathParameterization()
 
     if time_parametrization is None:
-        raise ValueError("TOPP-RA failed to find a valid time parametrization.")
+        raise TimeParameterizationError("TOPP-RA failed to find a valid time parametrization.")
 
     joint_trajectory = PathParameterizedTrajectory(joint_trajectory, time_parametrization)
 
