@@ -1,4 +1,4 @@
-"""Tests for the two-stage calibrated IK (analytic branch-pick -> calibrated refine).
+"""Tests for calibrated UR kinematics (analytic branch-pick -> calibrated refine).
 
 The offline tests emulate a physically calibrated robot: we build a Drake model from
 DH parameters perturbed away from nominal (standing in for a real factory calibration),
@@ -17,10 +17,8 @@ import time
 
 import numpy as np
 import pytest
-from pydrake.math import RigidTransform
-from pydrake.planning import RobotDiagramBuilder
 
-from airo_drake import calibrated_dh_to_urdf, refine_calibrated_ik, two_stage_calibrated_ik
+from airo_drake import CalibratedKinematics
 
 PI = np.pi
 
@@ -41,33 +39,6 @@ def _perturbed_dh(rng: np.random.Generator, scale: float = 1e-3) -> dict:
     }
 
 
-def _build_calibrated_arm(dh: dict):
-    """Build the calibrated arm, welded to world with identity.
-
-    Returns (robot_diagram, context, arm_index). The caller MUST keep robot_diagram and
-    context alive for as long as it uses the plant/plant_context derived from them: the
-    plant and its contexts are owned by the diagram, so if the diagram is garbage
-    collected the plant becomes a dangling reference (intermittent RuntimeError/segfault).
-    """
-    builder = RobotDiagramBuilder()
-    plant = builder.plant()
-    arm_index = builder.parser().AddModelsFromString(calibrated_dh_to_urdf(dh, "ur5e"), "urdf")[0]
-    plant.WeldFrames(
-        plant.world_frame(),
-        plant.GetFrameByName("base_link", arm_index),
-        RigidTransform(),
-    )
-    robot_diagram = builder.Build()
-    context = robot_diagram.CreateDefaultContext()
-    return robot_diagram, context, arm_index
-
-
-def _fk(plant, plant_context, arm_index, q: np.ndarray) -> np.ndarray:
-    plant.SetPositions(plant_context, arm_index, np.asarray(q, dtype=float))
-    tool = plant.GetFrameByName("tool0", arm_index)
-    return plant.CalcRelativeTransform(plant_context, plant.world_frame(), tool).GetAsMatrix4()
-
-
 def _position_error_mm(X_a: np.ndarray, X_b: np.ndarray) -> float:
     return 1000.0 * float(np.linalg.norm(np.asarray(X_a)[:3, 3] - np.asarray(X_b)[:3, 3]))
 
@@ -85,39 +56,33 @@ def _wrapped_joint_distance(q_a: np.ndarray, q_b: np.ndarray) -> float:
 
 def test_refine_reaches_target_on_calibrated_model():
     """A refine seeded near the true configuration hits the target to sub-micron precision."""
-    robot_diagram, context, arm_index = _build_calibrated_arm(_perturbed_dh(np.random.default_rng(0)))
-    plant = robot_diagram.plant()
-    plant_context = plant.GetMyContextFromRoot(context)
+    calibrated_kinematics = CalibratedKinematics(_perturbed_dh(np.random.default_rng(0)), "ur5e")
     q_true = _HOME + np.deg2rad([5, -8, 6, -4, 7, -3])
-    X_target = _fk(plant, plant_context, arm_index, q_true)
+    X_target = calibrated_kinematics.forward_kinematics(q_true)
 
-    result = refine_calibrated_ik(plant, plant_context, arm_index, X_target, q_seed=q_true)
+    result = calibrated_kinematics.inverse_kinematics_closest(X_target, q_seed=q_true)
 
     assert result is not None
     assert result.is_close_to_seed
-    assert _position_error_mm(_fk(plant, plant_context, arm_index, result.joint_configuration), X_target) < 0.05
+    assert _position_error_mm(calibrated_kinematics.forward_kinematics(result.joint_configuration), X_target) < 0.05
 
 
 def test_refine_result_flags_whether_solution_stayed_near_seed():
     """The result carries the solution plus an is_close_to_seed flag from the soft stay-near-seed cost."""
-    robot_diagram, context, arm_index = _build_calibrated_arm(_perturbed_dh(np.random.default_rng(0)))
-    plant = robot_diagram.plant()
-    plant_context = plant.GetMyContextFromRoot(context)
+    calibrated_kinematics = CalibratedKinematics(_perturbed_dh(np.random.default_rng(0)), "ur5e")
     q_true = _HOME + np.deg2rad([5, -8, 6, -4, 7, -3])
-    X_target = _fk(plant, plant_context, arm_index, q_true)
+    X_target = calibrated_kinematics.forward_kinematics(q_true)
 
     # A normal refine nudges the seed by well under a degree -> close to seed under the default threshold,
     # and max_seed_deviation reports exactly that small nudge.
-    result = refine_calibrated_ik(plant, plant_context, arm_index, X_target, q_seed=q_true)
+    result = calibrated_kinematics.inverse_kinematics_closest(X_target, q_seed=q_true)
     assert result is not None
     assert result.is_close_to_seed
     assert 0.0 < result.max_seed_deviation < np.deg2rad(2.0)
 
     # The same small nudge is flagged NOT close once the threshold is tightened below it,
     # deterministically exercising the "left the seed" path without needing a real branch flip.
-    strict = refine_calibrated_ik(
-        plant, plant_context, arm_index, X_target, q_seed=q_true, seed_deviation_threshold=0.0
-    )
+    strict = calibrated_kinematics.inverse_kinematics_closest(X_target, q_seed=q_true, seed_deviation_threshold=0.0)
     assert strict is not None
     assert not strict.is_close_to_seed
     assert strict.max_seed_deviation == result.max_seed_deviation
@@ -128,15 +93,13 @@ def test_two_stage_ik_beats_analytic_ik_on_calibrated_model():
     ur_analytic_ik = pytest.importorskip("ur_analytic_ik")
 
     rng = np.random.default_rng(1)
-    robot_diagram, context, arm_index = _build_calibrated_arm(_perturbed_dh(rng))
-    plant = robot_diagram.plant()
-    plant_context = plant.GetMyContextFromRoot(context)
+    calibrated_kinematics = CalibratedKinematics(_perturbed_dh(rng), "ur5e", analytic_ik_model=ur_analytic_ik.ur5e)
 
     analytic_errors = []
     refined_errors = []
     for _ in range(15):
         q_true = _HOME + rng.uniform(-0.4, 0.4, size=6)
-        X_target = _fk(plant, plant_context, arm_index, q_true)  # the calibrated robot's "reality"
+        X_target = calibrated_kinematics.forward_kinematics(q_true)  # the calibrated robot's "reality"
         q_start = q_true + rng.uniform(-0.1, 0.1, size=6)  # a nearby seed (e.g. current config)
 
         analytic_solutions = ur_analytic_ik.ur5e.inverse_kinematics_closest(X_target, *q_start)
@@ -144,19 +107,12 @@ def test_two_stage_ik_beats_analytic_ik_on_calibrated_model():
             continue
         q_analytic = np.asarray(analytic_solutions[0], dtype=float).reshape(-1)
 
-        result = two_stage_calibrated_ik(
-            plant,
-            plant_context,
-            arm_index,
-            X_target,
-            ur_analytic_ik.ur5e,
-            q_seed=q_start,
-        )
+        result = calibrated_kinematics.inverse_kinematics_closest(X_target, q_seed=q_start)
         assert result is not None
 
-        analytic_errors.append(_position_error_mm(_fk(plant, plant_context, arm_index, q_analytic), X_target))
+        analytic_errors.append(_position_error_mm(calibrated_kinematics.forward_kinematics(q_analytic), X_target))
         refined_errors.append(
-            _position_error_mm(_fk(plant, plant_context, arm_index, result.joint_configuration), X_target)
+            _position_error_mm(calibrated_kinematics.forward_kinematics(result.joint_configuration), X_target)
         )
 
     assert len(analytic_errors) >= 10
@@ -180,28 +136,19 @@ def test_two_stage_ik_never_flips_branch():
     ur_analytic_ik = pytest.importorskip("ur_analytic_ik")
 
     rng = np.random.default_rng(2)
-    robot_diagram, context, arm_index = _build_calibrated_arm(_perturbed_dh(rng))
-    plant = robot_diagram.plant()
-    plant_context = plant.GetMyContextFromRoot(context)
+    calibrated_kinematics = CalibratedKinematics(_perturbed_dh(rng), "ur5e", analytic_ik_model=ur_analytic_ik.ur5e)
 
     checked = 0
     for _ in range(25):
         q_true = _HOME + rng.uniform(-0.4, 0.4, size=6)
-        X_target = _fk(plant, plant_context, arm_index, q_true)
+        X_target = calibrated_kinematics.forward_kinematics(q_true)
         q_start = q_true + rng.uniform(-0.1, 0.1, size=6)
 
         analytic_solutions = ur_analytic_ik.ur5e.inverse_kinematics_closest(X_target, *q_start)
         if not analytic_solutions:
             continue
         seed_branch = np.asarray(analytic_solutions[0], dtype=float).reshape(-1)
-        result = two_stage_calibrated_ik(
-            plant,
-            plant_context,
-            arm_index,
-            X_target,
-            ur_analytic_ik.ur5e,
-            q_seed=q_start,
-        )
+        result = calibrated_kinematics.inverse_kinematics_closest(X_target, q_seed=q_start)
         assert result is not None
         q_refined = result.joint_configuration
 
@@ -227,30 +174,21 @@ def test_two_stage_ik_solves_fast():
     ur_analytic_ik = pytest.importorskip("ur_analytic_ik")
 
     rng = np.random.default_rng(3)
-    robot_diagram, context, arm_index = _build_calibrated_arm(_perturbed_dh(rng))
-    plant = robot_diagram.plant()
-    plant_context = plant.GetMyContextFromRoot(context)
+    calibrated_kinematics = CalibratedKinematics(_perturbed_dh(rng), "ur5e", analytic_ik_model=ur_analytic_ik.ur5e)
 
     # Warm up once (the first solve pays one-time solver setup we don't want to time).
     q_warmup = _HOME + rng.uniform(-0.4, 0.4, size=6)
-    X_warmup = _fk(plant, plant_context, arm_index, q_warmup)
-    two_stage_calibrated_ik(plant, plant_context, arm_index, X_warmup, ur_analytic_ik.ur5e, q_seed=q_warmup)
+    X_warmup = calibrated_kinematics.forward_kinematics(q_warmup)
+    calibrated_kinematics.inverse_kinematics_closest(X_warmup, q_seed=q_warmup)
 
     durations = []
     for _ in range(20):
         q_true = _HOME + rng.uniform(-0.4, 0.4, size=6)
-        X_target = _fk(plant, plant_context, arm_index, q_true)
+        X_target = calibrated_kinematics.forward_kinematics(q_true)
         q_start = q_true + rng.uniform(-0.1, 0.1, size=6)
 
         start = time.perf_counter()
-        result = two_stage_calibrated_ik(
-            plant,
-            plant_context,
-            arm_index,
-            X_target,
-            ur_analytic_ik.ur5e,
-            q_seed=q_start,
-        )
+        result = calibrated_kinematics.inverse_kinematics_closest(X_target, q_seed=q_start)
         durations.append(time.perf_counter() - start)
         assert result is not None
 

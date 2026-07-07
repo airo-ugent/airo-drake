@@ -46,13 +46,12 @@ from pydrake.planning import RobotDiagram
 from pydrake.systems.framework import Context
 
 from airo_drake import (
-    CalibratedIKResult,
+    CalibratedKinematics,
+    KinematicsResult,
     add_manipulator,
     add_meshcat,
-    calibrated_dh_to_urdf,
     finish_build,
     read_calibrated_dh,
-    two_stage_calibrated_ik,
 )
 
 
@@ -113,7 +112,7 @@ def _check_frame_consistency(
     print("Continuing anyway (--allow-frame-mismatch).")
 
 
-def _warn_if_left_branch(refine_result: CalibratedIKResult) -> None:
+def _warn_if_left_branch(refine_result: KinematicsResult) -> None:
     """If the refine left the analytic branch (soft cost lost the seed), warn and confirm."""
     if refine_result.is_close_to_seed:
         return
@@ -122,25 +121,6 @@ def _warn_if_left_branch(refine_result: CalibratedIKResult) -> None:
         "from seed) -- it may be a different configuration than intended. Inspect the MeshCat preview carefully."
     )
     _confirm("Continue with this refined configuration despite the branch deviation?")
-
-
-def _build_calibrated_ik_plant(dh: dict) -> tuple[RobotDiagram, Context, ModelInstanceIndex]:
-    """Arm-only, geometry-less calibrated plant welded to world with identity (for IK)."""
-    from pydrake.math import RigidTransform
-    from pydrake.planning import RobotDiagramBuilder
-
-    builder = RobotDiagramBuilder()
-    plant = builder.plant()
-    arm_index = builder.parser().AddModelsFromString(calibrated_dh_to_urdf(dh, "calibrated"), "urdf")[0]
-    plant.WeldFrames(
-        plant.world_frame(),
-        plant.GetFrameByName("base_link", arm_index),
-        RigidTransform(),
-    )
-    robot_diagram: RobotDiagram = builder.Build()  # type: ignore
-    context = robot_diagram.CreateDefaultContext()
-    # Keep robot_diagram + context alive: the plant/contexts are owned by the diagram.
-    return robot_diagram, context, arm_index
 
 
 def _build_meshcat_scene(model: str) -> tuple[RobotDiagram, Context, ModelInstanceIndex, Meshcat]:
@@ -205,19 +185,12 @@ def main() -> None:
     print("Reading the robot's calibrated DH parameters (primary interface, port 30001) ...")
     dh = read_calibrated_dh(args.ip)
     print(f"calibration_status = {dh.get('calibration_status')}")
-    ik_diagram, ik_context, ik_arm_index = _build_calibrated_ik_plant(dh)
-    ik_plant = ik_diagram.plant()
-    ik_plant_context = ik_plant.GetMyContextFromRoot(ik_context)
-    tool_frame = ik_plant.GetFrameByName("tool0", ik_arm_index)
-
-    def calibrated_fk(q: JointConfigurationType) -> HomogeneousMatrixType:
-        ik_plant.SetPositions(ik_plant_context, ik_arm_index, np.asarray(q, dtype=float))
-        return ik_plant.CalcRelativeTransform(ik_plant_context, ik_plant.world_frame(), tool_frame).GetAsMatrix4()
+    calibrated_kinematics = CalibratedKinematics(dh, "calibrated", analytic_ik_model=analytic_model)
 
     # Verify our target frame matches the control box's BEFORE defining a target or moving.
     _check_frame_consistency(
         robot,
-        calibrated_fk,
+        calibrated_kinematics.forward_kinematics,
         args.max_frame_offset_mm,
         args.max_frame_offset_deg,
         args.allow_frame_mismatch,
@@ -225,7 +198,7 @@ def main() -> None:
 
     # Define a reachable target near the current pose (small, safe motion) via calibrated FK.
     q_target_truth = q_current + np.deg2rad(args.delta_deg) * rng.uniform(-1, 1, size=6)
-    X_target = calibrated_fk(q_target_truth)
+    X_target = calibrated_kinematics.forward_kinematics(q_target_truth)
     print(f"\ntarget TCP position (m): {np.round(X_target[:3, 3], 4)}")
 
     meshcat = None
@@ -274,14 +247,7 @@ def main() -> None:
 
     # --- Stage 2: calibrated refine (seeded on the analytic branch) ---
     print("\n=== Stage 2: calibrated refine (two-stage IK) ===")
-    refine_result = two_stage_calibrated_ik(
-        ik_plant,
-        ik_plant_context,
-        ik_arm_index,
-        X_target,
-        analytic_model,
-        q_seed=robot.get_joint_configuration(),
-    )
+    refine_result = calibrated_kinematics.inverse_kinematics_closest(X_target, q_seed=robot.get_joint_configuration())
     if refine_result is None:
         raise SystemExit("Calibrated refine did not converge for this target.")
     q_refined = refine_result.joint_configuration
