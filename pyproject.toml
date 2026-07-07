@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "airo-drake"
-version = "0.0.7"
+version = "0.0.8"
 authors = [
   { name = "Andreas Verleysen", email = "andreas.verleysen@ugent.be" },
   { name = "Victor-Louis De Gusseme", email = "victorlouisdg@gmail.com" },
@@ -19,8 +19,18 @@ classifiers = [
   "Operating System :: OS Independent",
 ]
 
-dependencies = ["airo-models>=0.0.10", "drake", "ur-analytic-ik>=0.0.4", "loguru"]
+dependencies = [
+    "airo-models>=0.0.12",
+    "airo-typing>=2025.11.0",
+    "drake>=1.47.0",
+    "jupyter>=1.1.1",
+    "loguru>=0.7.3",
+    "ur-analytic-ik>=0.0.4",
+]
 
 [project.urls]
 Homepage = "https://github.com/airo-ugent/airo-drake"
 Issues = "https://github.com/airo-ugent/airo-drake/issues"
+
+[tool.uv.sources]
+airo-models = { git = "https://github.com/airo-ugent/airo-models.git", branch = "crx10ial" }
