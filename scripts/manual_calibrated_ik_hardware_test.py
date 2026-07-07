@@ -50,9 +50,7 @@ from airo_drake import (
 
 
 def _position_error_mm(X_a, X_b):
-    return 1000.0 * float(
-        np.linalg.norm(np.asarray(X_a)[:3, 3] - np.asarray(X_b)[:3, 3])
-    )
+    return 1000.0 * float(np.linalg.norm(np.asarray(X_a)[:3, 3] - np.asarray(X_b)[:3, 3]))
 
 
 def _orientation_error_deg(X_a, X_b):
@@ -61,18 +59,12 @@ def _orientation_error_deg(X_a, X_b):
 
 
 def _confirm(prompt):
-    answer = (
-        input(f"{prompt} [type 'yes' to proceed, anything else to abort]: ")
-        .strip()
-        .lower()
-    )
+    answer = input(f"{prompt} [type 'yes' to proceed, anything else to abort]: ").strip().lower()
     if answer != "yes":
         raise SystemExit("Aborted by user.")
 
 
-def _check_frame_consistency(
-    robot, calibrated_fk, max_position_mm, max_orientation_deg, allow_mismatch
-):
+def _check_frame_consistency(robot, calibrated_fk, max_position_mm, max_orientation_deg, allow_mismatch):
     """Verify our calibrated tool0 FK matches the control box's TCP pose at the current joints.
 
     Both should be the controller's own calibrated kinematics in the same base frame, so a
@@ -86,14 +78,10 @@ def _check_frame_consistency(
 
     position_mm = _position_error_mm(X_ours, X_controlbox)
     orientation_deg = _orientation_error_deg(X_ours, X_controlbox)
-    print(
-        "\n=== frame-consistency check (our calibrated FK vs control-box TCP, at current joints) ==="
-    )
+    print("\n=== frame-consistency check (our calibrated FK vs control-box TCP, at current joints) ===")
     print(f"position offset:    {position_mm:.3f} mm")
     print(f"orientation offset: {orientation_deg:.3f} deg")
-    print(
-        f"relative transform (our_tool0 -> control_box_tcp):\n{np.round(relative, 4)}"
-    )
+    print(f"relative transform (our_tool0 -> control_box_tcp):\n{np.round(relative, 4)}")
 
     if position_mm <= max_position_mm and orientation_deg <= max_orientation_deg:
         print("OK: frames agree; targets are in the control box's frame.")
@@ -108,10 +96,19 @@ def _check_frame_consistency(
         "Fix this before trusting the comparison."
     )
     if not allow_mismatch:
-        raise SystemExit(
-            "Aborting before any motion. Re-run with --allow-frame-mismatch to override."
-        )
+        raise SystemExit("Aborting before any motion. Re-run with --allow-frame-mismatch to override.")
     print("Continuing anyway (--allow-frame-mismatch).")
+
+
+def _warn_if_left_branch(refine_result):
+    """If the refine left the analytic branch (soft cost lost the seed), warn and confirm."""
+    if refine_result.is_close_to_seed:
+        return
+    print(
+        f"WARNING: refine left the analytic branch (max {np.rad2deg(refine_result.max_seed_deviation):.1f} deg "
+        "from seed) -- it may be a different configuration than intended. Inspect the MeshCat preview carefully."
+    )
+    _confirm("Continue with this refined configuration despite the branch deviation?")
 
 
 def _build_calibrated_ik_plant(dh):
@@ -121,9 +118,7 @@ def _build_calibrated_ik_plant(dh):
 
     builder = RobotDiagramBuilder()
     plant = builder.plant()
-    arm_index = builder.parser().AddModelsFromString(
-        calibrated_dh_to_urdf(dh, "calibrated"), "urdf"
-    )[0]
+    arm_index = builder.parser().AddModelsFromString(calibrated_dh_to_urdf(dh, "calibrated"), "urdf")[0]
     plant.WeldFrames(
         plant.world_frame(),
         plant.GetFrameByName("base_link", arm_index),
@@ -147,23 +142,15 @@ def _build_meshcat_scene(model):
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
-    )
-    parser.add_argument(
-        "--ip", required=True, help="robot IP address (robot must be in remote control)"
-    )
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument("--ip", required=True, help="robot IP address (robot must be in remote control)")
     parser.add_argument(
         "--model",
         default="ur5e",
         help="ur3e / ur5e / ... (must match the connected arm)",
     )
-    parser.add_argument(
-        "--joint-speed", type=float, default=0.3, help="moveJ speed [rad/s]"
-    )
-    parser.add_argument(
-        "--linear-speed", type=float, default=0.1, help="control-box moveL speed [m/s]"
-    )
+    parser.add_argument("--joint-speed", type=float, default=0.3, help="moveJ speed [rad/s]")
+    parser.add_argument("--linear-speed", type=float, default=0.1, help="control-box moveL speed [m/s]")
     parser.add_argument(
         "--delta-deg",
         type=float,
@@ -171,9 +158,7 @@ def main():
         help="magnitude of the random joint offset from the current pose used to define the target",
     )
     parser.add_argument("--seed", type=int, default=0)
-    parser.add_argument(
-        "--no-meshcat", action="store_true", help="skip the MeshCat preview steps"
-    )
+    parser.add_argument("--no-meshcat", action="store_true", help="skip the MeshCat preview steps")
     parser.add_argument(
         "--allow-frame-mismatch",
         action="store_true",
@@ -204,9 +189,7 @@ def main():
     q_current = robot.get_joint_configuration()
     print(f"current joints (deg): {np.round(np.rad2deg(q_current), 2)}")
 
-    print(
-        "Reading the robot's calibrated DH parameters (primary interface, port 30001) ..."
-    )
+    print("Reading the robot's calibrated DH parameters (primary interface, port 30001) ...")
     dh = read_calibrated_dh(args.ip)
     print(f"calibration_status = {dh.get('calibration_status')}")
     ik_diagram, ik_context, ik_arm_index = _build_calibrated_ik_plant(dh)
@@ -215,12 +198,8 @@ def main():
     tool_frame = ik_plant.GetFrameByName("tool0", ik_arm_index)
 
     def calibrated_fk(q):
-        ik_plant.SetPositions(
-            ik_plant_context, ik_arm_index, np.asarray(q, dtype=float)
-        )
-        return ik_plant.CalcRelativeTransform(
-            ik_plant_context, ik_plant.world_frame(), tool_frame
-        ).GetAsMatrix4()
+        ik_plant.SetPositions(ik_plant_context, ik_arm_index, np.asarray(q, dtype=float))
+        return ik_plant.CalcRelativeTransform(ik_plant_context, ik_plant.world_frame(), tool_frame).GetAsMatrix4()
 
     # Verify our target frame matches the control box's BEFORE defining a target or moving.
     _check_frame_consistency(
@@ -238,21 +217,15 @@ def main():
 
     meshcat = None
     if not args.no_meshcat:
-        viz_diagram, viz_context, viz_arm_index, meshcat = _build_meshcat_scene(
-            args.model
-        )
+        viz_diagram, viz_context, viz_arm_index, meshcat = _build_meshcat_scene(args.model)
         viz_plant = viz_diagram.plant()
         viz_plant_context = viz_plant.GetMyContextFromRoot(viz_context)
 
         def preview(q):
-            viz_plant.SetPositions(
-                viz_plant_context, viz_arm_index, np.asarray(q, dtype=float)
-            )
+            viz_plant.SetPositions(viz_plant_context, viz_arm_index, np.asarray(q, dtype=float))
             viz_diagram.ForcedPublish(viz_context)
 
-        print(
-            "\nMeshCat is running -- open the printed URL above to preview configurations."
-        )
+        print("\nMeshCat is running -- open the printed URL above to preview configurations.")
     else:
 
         def preview(q):
@@ -280,19 +253,15 @@ def main():
 
     # --- Stage 1: analytic IK (nominal DH) ---
     print("\n=== Stage 1: analytic IK (nominal DH) ===")
-    analytic_solutions = analytic_model.inverse_kinematics_closest(
-        X_target, *robot.get_joint_configuration()
-    )
+    analytic_solutions = analytic_model.inverse_kinematics_closest(X_target, *robot.get_joint_configuration())
     if not analytic_solutions:
-        raise SystemExit(
-            "Analytic IK found no solution for this target; try a different --seed or --delta-deg."
-        )
+        raise SystemExit("Analytic IK found no solution for this target; try a different --seed or --delta-deg.")
     q_analytic = np.asarray(analytic_solutions[0], dtype=float).reshape(-1)
     move_and_measure("analytic", q_analytic)
 
     # --- Stage 2: calibrated refine (seeded on the analytic branch) ---
     print("\n=== Stage 2: calibrated refine (two-stage IK) ===")
-    q_refined = two_stage_calibrated_ik(
+    refine_result = two_stage_calibrated_ik(
         ik_plant,
         ik_plant_context,
         ik_arm_index,
@@ -300,18 +269,16 @@ def main():
         analytic_model,
         q_seed=robot.get_joint_configuration(),
     )
-    if q_refined is None:
+    if refine_result is None:
         raise SystemExit("Calibrated refine did not converge for this target.")
-    print(
-        f"refine nudged the analytic joints by (deg): {np.round(np.rad2deg(q_refined - q_analytic), 3)}"
-    )
+    q_refined = refine_result.joint_configuration
+    print(f"refine nudged the analytic joints by (deg): {np.round(np.rad2deg(q_refined - q_analytic), 3)}")
+    _warn_if_left_branch(refine_result)
     move_and_measure("refined", q_refined)
 
     # --- Stage 3: control-box move (the control box does its own calibrated IK) ---
     print("\n=== Stage 3: control-box move (moveL to the target pose) ===")
-    _confirm(
-        "Let the control box move linearly to the target pose (its own calibrated IK)?"
-    )
+    _confirm("Let the control box move linearly to the target pose (its own calibrated IK)?")
     robot.move_linear_to_tcp_pose(X_target, linear_speed=args.linear_speed).wait()
     X_achieved = robot.get_tcp_pose()
     q_control_box = robot.get_joint_configuration()
@@ -319,12 +286,8 @@ def main():
         _position_error_mm(X_achieved, X_target),
         _orientation_error_deg(X_achieved, X_target),
     )
-    print(
-        f"[control_box] achieved TCP error: {results['control_box'][0]:.3f} mm, {results['control_box'][1]:.3f} deg"
-    )
-    print(
-        f"[control_box] joints chosen (deg): {np.round(np.rad2deg(q_control_box), 2)}"
-    )
+    print(f"[control_box] achieved TCP error: {results['control_box'][0]:.3f} mm, {results['control_box'][1]:.3f} deg")
+    print(f"[control_box] joints chosen (deg): {np.round(np.rad2deg(q_control_box), 2)}")
 
     # --- Summary ---
     print("\n=== SUMMARY (achieved TCP error vs target) ===")

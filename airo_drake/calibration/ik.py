@@ -23,6 +23,7 @@ It contains only the arm's 6 joints; nothing to collide
 with, which is why this model is IK-only.
 """
 
+from dataclasses import dataclass
 from typing import Any
 
 import numpy as np
@@ -34,6 +35,34 @@ from pydrake.multibody.tree import ModelInstanceIndex
 from pydrake.solvers import IpoptSolver, SolverOptions
 from pydrake.systems.framework import Context
 
+# A successful refine should only nudge the seed by the calibration magnitude (sub-degree
+# in practice). A larger move means the soft stay-near-seed cost failed to hold the branch
+# (e.g. a branch flip, or a poor seed). The default (~5 deg) sits well above a real
+# calibration nudge and well below a branch flip (tens of degrees).
+_SEED_DEVIATION_THRESHOLD = float(np.deg2rad(5.0))
+
+
+@dataclass(frozen=True)
+class CalibratedIKResult:
+    """Result of a calibrated IK refine.
+
+    The stay-near-seed term in the refine is a soft cost, not a hard constraint, so the
+    solver can reach the target pose yet settle on a different branch than the seed. This
+    bundles the solution with a check of exactly that, so the caller can decide what to do
+    (e.g. reject it, or fall back) rather than silently trusting a possibly-flipped result.
+
+    Attributes:
+        joint_configuration: the refined joint configuration (6,).
+        is_close_to_seed: True iff every joint stayed within the deviation threshold of the
+            seed, i.e., the refine stayed on the seed's branch, as intended.
+        max_seed_deviation: the largest per-joint move from the seed (radians), wrapped to
+            [-pi, pi); the number `is_close_to_seed` is derived from.
+    """
+
+    joint_configuration: JointConfigurationType
+    is_close_to_seed: bool
+    max_seed_deviation: float
+
 
 def refine_calibrated_ik(
     plant: MultibodyPlant,
@@ -44,7 +73,8 @@ def refine_calibrated_ik(
     tool_frame_name: str = "tool0",
     position_tolerance: float = 1e-5,
     orientation_tolerance: float = 1e-4,
-) -> JointConfigurationType | None:
+    seed_deviation_threshold: float = _SEED_DEVIATION_THRESHOLD,
+) -> "CalibratedIKResult | None":
     """Numerically refine a seed configuration against the calibrated model (stage 2).
 
     Solves Drake `InverseKinematics` on `plant` for the tool frame to reach `tcp_pose`,
@@ -59,9 +89,12 @@ def refine_calibrated_ik(
         tool_frame_name: the tool frame to constrain (`tool0` == DH frame 6).
         position_tolerance: half-width (m) of the box constraint on the tool position.
         orientation_tolerance: max angle (rad) between target and achieved orientation.
+        seed_deviation_threshold: max per-joint move (rad) from `q_seed` still considered
+            "close" for `CalibratedIKResult.is_close_to_seed` (see that class).
 
     Returns:
-        The refined joint configuration (6,), or None if the solver did not converge.
+        A `CalibratedIKResult` (solution + closeness-to-seed flag), or None if the solver
+        did not converge.
     """
     q_seed = np.asarray(q_seed, dtype=float).reshape(-1)
     tcp_pose = np.asarray(tcp_pose, dtype=float)
@@ -90,9 +123,7 @@ def refine_calibrated_ik(
     program = inverse_kinematics.prog()
     q = inverse_kinematics.q()
     program.SetInitialGuess(q, q_seed)
-    program.AddQuadraticErrorCost(
-        np.eye(q_seed.size), q_seed, q
-    )  # stay on the seed's branch
+    program.AddQuadraticErrorCost(np.eye(q_seed.size), q_seed, q)  # stay on the seed's branch
 
     solver = IpoptSolver()
     options = SolverOptions()
@@ -101,7 +132,16 @@ def refine_calibrated_ik(
     result = solver.Solve(program, None, options)
     if not result.is_success():
         return None
-    return plant.GetPositionsFromArray(arm_index, result.GetSolution(q))
+    q_refined = plant.GetPositionsFromArray(arm_index, result.GetSolution(q))
+
+    # The stay-near-seed cost is soft, so report how far the solve actually stayed from the seed.
+    per_joint_deviation = np.abs((q_refined - q_seed + np.pi) % (2 * np.pi) - np.pi)  # wrap to [-pi, pi)
+    max_deviation = float(np.max(per_joint_deviation))
+    return CalibratedIKResult(
+        joint_configuration=q_refined,
+        is_close_to_seed=max_deviation <= seed_deviation_threshold,
+        max_seed_deviation=max_deviation,
+    )
 
 
 def two_stage_calibrated_ik(
@@ -114,7 +154,8 @@ def two_stage_calibrated_ik(
     tool_frame_name: str = "tool0",
     position_tolerance: float = 1e-5,
     orientation_tolerance: float = 1e-4,
-) -> JointConfigurationType | None:
+    seed_deviation_threshold: float = _SEED_DEVIATION_THRESHOLD,
+) -> "CalibratedIKResult | None":
     """Analytic branch-pick (stage 1) then calibrated refine (stage 2).
 
     Args:
@@ -124,17 +165,16 @@ def two_stage_calibrated_ik(
             exposing `inverse_kinematics_closest(tcp_pose, *q_seed)`.
         q_seed: the seed joint configuration (6,) the analytic branch is picked nearest to
             (typically the robot's current configuration).
-        tool_frame_name, position_tolerance, orientation_tolerance: forwarded to
-            `refine_calibrated_ik`.
+        tool_frame_name, position_tolerance, orientation_tolerance, seed_deviation_threshold:
+            forwarded to `refine_calibrated_ik`. `is_close_to_seed` on the result is measured
+            against the analytic branch, i.e. it flags a refine that left the branch stage 1 picked.
 
     Returns:
-        The refined joint configuration (6,), or None if analytic IK found no solution
-        for this pose or the refine step did not converge.
+        A `CalibratedIKResult` (solution + closeness-to-seed flag), or None if analytic IK
+        found no solution for this pose or the refine step did not converge.
     """
     q_seed = np.asarray(q_seed, dtype=float).reshape(-1)
-    analytic_solutions = analytic_ik_model.inverse_kinematics_closest(
-        np.asarray(tcp_pose, dtype=float), *q_seed
-    )
+    analytic_solutions = analytic_ik_model.inverse_kinematics_closest(np.asarray(tcp_pose, dtype=float), *q_seed)
     if not analytic_solutions:
         return None
     branch = np.asarray(analytic_solutions[0], dtype=float).reshape(-1)
@@ -147,4 +187,5 @@ def two_stage_calibrated_ik(
         tool_frame_name=tool_frame_name,
         position_tolerance=position_tolerance,
         orientation_tolerance=orientation_tolerance,
+        seed_deviation_threshold=seed_deviation_threshold,
     )

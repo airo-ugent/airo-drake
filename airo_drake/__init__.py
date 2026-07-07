@@ -47,7 +47,7 @@ from airo_drake.collision.collision_checking import (
 from airo_drake.calibration.extraction import read_calibrated_dh
 from airo_drake.calibration.conversion import calibrated_dh_to_urdf
 from airo_drake.calibration.io import load_calibrated_dh, save_calibrated_dh, warn_if_uncalibrated
-from airo_drake.calibration.ik import refine_calibrated_ik, two_stage_calibrated_ik
+from airo_drake.calibration.ik import CalibratedIKResult, refine_calibrated_ik, two_stage_calibrated_ik
 from airo_drake.exceptions import TimeParameterizationError
 
 __all__ = [
@@ -93,5 +93,6 @@ __all__ = [
     "warn_if_uncalibrated",
     "refine_calibrated_ik",
     "two_stage_calibrated_ik",
+    "CalibratedIKResult",
     "TimeParameterizationError",
 ]

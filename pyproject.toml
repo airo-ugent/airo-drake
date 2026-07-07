@@ -34,3 +34,8 @@ Issues = "https://github.com/airo-ugent/airo-drake/issues"
 
 [tool.uv.sources]
 airo-models = { git = "https://github.com/airo-ugent/airo-models.git", branch = "crx10ial" }
+
+[dependency-groups]
+dev = [
+    "pre-commit>=4.6.0",
+]
