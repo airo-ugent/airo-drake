@@ -68,10 +68,7 @@ def fk_dh(dh: dict, q: JointConfigurationType) -> HomogeneousMatrixType:
     transform = np.eye(4)
     for i in range(6):
         transform = transform @ (
-            _rot_z(dh["theta"][i] + q[i])
-            @ _trans_z(dh["d"][i])
-            @ _trans_x(dh["a"][i])
-            @ _rot_x(dh["alpha"][i])
+            _rot_z(dh["theta"][i] + q[i]) @ _trans_z(dh["d"][i]) @ _trans_x(dh["a"][i]) @ _rot_x(dh["alpha"][i])
         )
     return transform
 
@@ -83,19 +80,13 @@ def dh_to_origins(dh: dict) -> list[HomogeneousMatrixType]:
     with `ur_description`'s own per-link convention (`alpha_{i-1}`/`a_{i-1}` lead,
     `d_i`/`theta_i` trail), not just the overall base->flange pose.
     """
-    theta, a, d, alpha = (
-        np.asarray(dh[key], dtype=float) for key in ("theta", "a", "d", "alpha")
-    )
+    theta, a, d, alpha = (np.asarray(dh[key], dtype=float) for key in ("theta", "a", "d", "alpha"))
     origins = []
     alpha_prev, a_prev = 0.0, 0.0
     for i in range(6):
-        origins.append(
-            _rot_x(alpha_prev) @ _trans_x(a_prev) @ _trans_z(d[i]) @ _rot_z(theta[i])
-        )
+        origins.append(_rot_x(alpha_prev) @ _trans_x(a_prev) @ _trans_z(d[i]) @ _rot_z(theta[i]))
         alpha_prev, a_prev = alpha[i], a[i]
-    origins.append(
-        _rot_x(alpha_prev) @ _trans_x(a_prev)
-    )  # O_tool: fixed wrist_3 -> flange
+    origins.append(_rot_x(alpha_prev) @ _trans_x(a_prev))  # O_tool: fixed wrist_3 -> flange
     return origins
 
 

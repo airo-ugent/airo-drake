@@ -55,9 +55,7 @@ def _scan(buffer: bytes) -> dict | None:
     return None
 
 
-def read_calibrated_dh(
-    robot_ip: str, port: int = 30001, timeout: float = 10.0, max_bytes: int = 5_000_000
-) -> dict:
+def read_calibrated_dh(robot_ip: str, port: int = 30001, timeout: float = 10.0, max_bytes: int = 5_000_000) -> dict:
     """Connect to a UR robot's primary interface and return its calibrated DH parameters.
 
     The robot only needs to be powered on.
