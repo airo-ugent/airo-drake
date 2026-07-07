@@ -107,7 +107,7 @@ def refine_calibrated_ik(
     inverse_kinematics = InverseKinematics(plant, plant_context)
     inverse_kinematics.AddPositionConstraint(
         tool_frame,
-        [0, 0, 0],
+        np.zeros(3),
         world_frame,
         target_position - position_tolerance,
         target_position + position_tolerance,
@@ -123,7 +123,7 @@ def refine_calibrated_ik(
     program = inverse_kinematics.prog()
     q = inverse_kinematics.q()
     program.SetInitialGuess(q, q_seed)
-    program.AddQuadraticErrorCost(np.eye(q_seed.size), q_seed, q)  # stay on the seed's branch
+    program.AddQuadraticErrorCost(np.eye(q_seed.size), q_seed, q)  # type: ignore  # stay on the seed's branch
 
     solver = IpoptSolver()
     options = SolverOptions()
