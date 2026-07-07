@@ -18,7 +18,8 @@ import time
 import numpy as np
 import pytest
 
-from airo_drake import CalibratedKinematics
+from airo_drake import X_URTOOL0_ROBOTIQ, CalibratedKinematics
+from airo_drake.kinematics import GRIPPER_TCP_FRAME_NAME
 
 PI = np.pi
 
@@ -196,6 +197,40 @@ def test_two_stage_ik_solves_fast():
     print(f"two-stage calibrated IK: mean {mean_ms:.1f} ms over {len(durations)} solves")
     # Typically ~1 ms here; a very generous ceiling that still catches a regression to seconds.
     assert mean_ms < 250.0
+
+
+def test_two_stage_ik_beats_analytic_ik_on_gripper_tcp_frame():
+    """The analytic branch-pick still applies when the two-stage refine targets a gripper TCP.
+
+    `analytic_ik_model` always solves for `tool0`, so this exercises the tool0-conversion in
+    `CalibratedKinematics._refinement_seed` -- without it, the branch-pick would be computed
+    for the wrong pose (the gripper TCP target, mistaken for a tool0 target).
+    """
+    ur_analytic_ik = pytest.importorskip("ur_analytic_ik")
+
+    rng = np.random.default_rng(4)
+    calibrated_kinematics = CalibratedKinematics(
+        _perturbed_dh(rng), "ur5e", analytic_ik_model=ur_analytic_ik.ur5e, gripper_transform=X_URTOOL0_ROBOTIQ
+    )
+
+    refined_errors = []
+    for _ in range(10):
+        q_true = _HOME + rng.uniform(-0.4, 0.4, size=6)
+        X_target = calibrated_kinematics.forward_kinematics(q_true, tool_frame_name=GRIPPER_TCP_FRAME_NAME)
+        q_start = q_true + rng.uniform(-0.1, 0.1, size=6)
+
+        result = calibrated_kinematics.inverse_kinematics_closest(
+            X_target, q_seed=q_start, tool_frame_name=GRIPPER_TCP_FRAME_NAME
+        )
+        assert result is not None
+        assert result.is_close_to_seed  # a wrong tool0 conversion would send the refine to a different branch
+
+        X_refined = calibrated_kinematics.forward_kinematics(
+            result.joint_configuration, tool_frame_name=GRIPPER_TCP_FRAME_NAME
+        )
+        refined_errors.append(_position_error_mm(X_refined, X_target))
+
+    assert float(np.mean(refined_errors)) < 0.05
 
 
 # The three-way comparison against the real robot's control box (analytic vs calibrated

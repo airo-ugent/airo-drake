@@ -37,6 +37,17 @@ result = kinematics.inverse_kinematics_closest(tcp_pose, q_seed)  # KinematicsRe
 seeded at `q_seed` with a stay-near-seed cost, so pick a seed close to the expected
 solution (e.g. the arm's current configuration). Only single-arm URDFs are supported.
 
+Pass `gripper_transform` to do FK/IK on a gripper's TCP instead of the arm's flange
+(`tool0`) -- e.g. `X_URTOOL0_ROBOTIQ`, the same transform `add_manipulator` uses to weld
+a Robotiq gripper on:
+
+```python
+kinematics = Kinematics.from_urdf_path(
+    airo_models.get_urdf_path("ur5e"), base_transform=X_URBASE_ROSBASE, gripper_transform=X_URTOOL0_ROBOTIQ
+)
+result = kinematics.inverse_kinematics_closest(tcp_pose, q_seed, tool_frame_name="gripper_tcp")
+```
+
 ## Calibration (UR only) 🎯
 Every physical UR arm has its own *calibrated* DH parameters, which differ slightly
 from the nominal DH parameters baked into the `airo_models` URDFs and into
@@ -58,6 +69,8 @@ refine, through the same call:
 calibrated_kinematics = CalibratedKinematics(dh, "ur5e", analytic_ik_model=ur_analytic_ik.ur5e)
 result = calibrated_kinematics.inverse_kinematics_closest(tcp_pose, q_seed)
 ```
+
+`gripper_transform` also works here, as in `Kinematics` above.
 
 See [`notebooks/06_calibrated_urdf.ipynb`](./notebooks/06_calibrated_urdf.ipynb), and
 to try it on a real arm, run `scripts/manual_calibrated_ik_hardware_test.py` (make
