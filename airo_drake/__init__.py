@@ -44,6 +44,11 @@ from airo_drake.collision.collision_checking import (
     filter_collisions_between_all_body_pairs,
     list_collisions_between_bodies,
 )
+from airo_drake.kinematics import Kinematics, KinematicsResult
+from airo_drake.ur_calibration.extraction import read_calibrated_dh
+from airo_drake.ur_calibration.conversion import calibrated_dh_to_urdf
+from airo_drake.ur_calibration.io import load_calibrated_dh, save_calibrated_dh, warn_if_uncalibrated
+from airo_drake.ur_calibration.kinematics import CalibratedKinematics
 from airo_drake.exceptions import TimeParameterizationError
 
 __all__ = [
@@ -82,5 +87,13 @@ __all__ = [
     "calculate_valid_joint_paths",
     "filter_collisions_between_all_body_pairs",
     "list_collisions_between_bodies",
+    "read_calibrated_dh",
+    "calibrated_dh_to_urdf",
+    "load_calibrated_dh",
+    "save_calibrated_dh",
+    "warn_if_uncalibrated",
+    "Kinematics",
+    "KinematicsResult",
+    "CalibratedKinematics",
     "TimeParameterizationError",
 ]
