@@ -36,10 +36,17 @@ Notes:
 """
 
 import argparse
+from typing import Any, Callable
 
 import numpy as np
+from airo_typing import HomogeneousMatrixType, JointConfigurationType
+from pydrake.geometry import Meshcat
+from pydrake.multibody.tree import ModelInstanceIndex
+from pydrake.planning import RobotDiagram
+from pydrake.systems.framework import Context
 
 from airo_drake import (
+    CalibratedIKResult,
     add_manipulator,
     add_meshcat,
     calibrated_dh_to_urdf,
@@ -49,22 +56,28 @@ from airo_drake import (
 )
 
 
-def _position_error_mm(X_a, X_b):
+def _position_error_mm(X_a: HomogeneousMatrixType, X_b: HomogeneousMatrixType) -> float:
     return 1000.0 * float(np.linalg.norm(np.asarray(X_a)[:3, 3] - np.asarray(X_b)[:3, 3]))
 
 
-def _orientation_error_deg(X_a, X_b):
+def _orientation_error_deg(X_a: HomogeneousMatrixType, X_b: HomogeneousMatrixType) -> float:
     R = np.asarray(X_a)[:3, :3].T @ np.asarray(X_b)[:3, :3]
     return float(np.degrees(np.arccos(np.clip((np.trace(R) - 1) / 2.0, -1.0, 1.0))))
 
 
-def _confirm(prompt):
+def _confirm(prompt: str) -> None:
     answer = input(f"{prompt} [type 'yes' to proceed, anything else to abort]: ").strip().lower()
     if answer != "yes":
         raise SystemExit("Aborted by user.")
 
 
-def _check_frame_consistency(robot, calibrated_fk, max_position_mm, max_orientation_deg, allow_mismatch):
+def _check_frame_consistency(
+    robot: Any,
+    calibrated_fk: Callable[[JointConfigurationType], HomogeneousMatrixType],
+    max_position_mm: float,
+    max_orientation_deg: float,
+    allow_mismatch: bool,
+) -> None:
     """Verify our calibrated tool0 FK matches the control box's TCP pose at the current joints.
 
     Both should be the controller's own calibrated kinematics in the same base frame, so a
@@ -100,7 +113,7 @@ def _check_frame_consistency(robot, calibrated_fk, max_position_mm, max_orientat
     print("Continuing anyway (--allow-frame-mismatch).")
 
 
-def _warn_if_left_branch(refine_result):
+def _warn_if_left_branch(refine_result: CalibratedIKResult) -> None:
     """If the refine left the analytic branch (soft cost lost the seed), warn and confirm."""
     if refine_result.is_close_to_seed:
         return
@@ -111,7 +124,7 @@ def _warn_if_left_branch(refine_result):
     _confirm("Continue with this refined configuration despite the branch deviation?")
 
 
-def _build_calibrated_ik_plant(dh):
+def _build_calibrated_ik_plant(dh: dict) -> tuple[RobotDiagram, Context, ModelInstanceIndex]:
     """Arm-only, geometry-less calibrated plant welded to world with identity (for IK)."""
     from pydrake.math import RigidTransform
     from pydrake.planning import RobotDiagramBuilder
@@ -124,13 +137,13 @@ def _build_calibrated_ik_plant(dh):
         plant.GetFrameByName("base_link", arm_index),
         RigidTransform(),
     )
-    robot_diagram = builder.Build()
+    robot_diagram: RobotDiagram = builder.Build()  # type: ignore
     context = robot_diagram.CreateDefaultContext()
     # Keep robot_diagram + context alive: the plant/contexts are owned by the diagram.
     return robot_diagram, context, arm_index
 
 
-def _build_meshcat_scene(model):
+def _build_meshcat_scene(model: str) -> tuple[RobotDiagram, Context, ModelInstanceIndex, Meshcat]:
     """Nominal airo_models mesh model + MeshCat, for previewing joint configurations."""
     from pydrake.planning import RobotDiagramBuilder
 
@@ -141,7 +154,7 @@ def _build_meshcat_scene(model):
     return robot_diagram, context, arm_index, meshcat
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--ip", required=True, help="robot IP address (robot must be in remote control)")
     parser.add_argument(
@@ -197,7 +210,7 @@ def main():
     ik_plant_context = ik_plant.GetMyContextFromRoot(ik_context)
     tool_frame = ik_plant.GetFrameByName("tool0", ik_arm_index)
 
-    def calibrated_fk(q):
+    def calibrated_fk(q: JointConfigurationType) -> HomogeneousMatrixType:
         ik_plant.SetPositions(ik_plant_context, ik_arm_index, np.asarray(q, dtype=float))
         return ik_plant.CalcRelativeTransform(ik_plant_context, ik_plant.world_frame(), tool_frame).GetAsMatrix4()
 
@@ -221,19 +234,19 @@ def main():
         viz_plant = viz_diagram.plant()
         viz_plant_context = viz_plant.GetMyContextFromRoot(viz_context)
 
-        def preview(q):
+        def preview(q: JointConfigurationType) -> None:
             viz_plant.SetPositions(viz_plant_context, viz_arm_index, np.asarray(q, dtype=float))
             viz_diagram.ForcedPublish(viz_context)
 
         print("\nMeshCat is running -- open the printed URL above to preview configurations.")
     else:
 
-        def preview(q):
+        def preview(q: JointConfigurationType) -> None:
             return None
 
     results = {}
 
-    def move_and_measure(label, q_goal):
+    def move_and_measure(label: str, q_goal: JointConfigurationType) -> None:
         delta_deg = np.rad2deg(np.asarray(q_goal) - robot.get_joint_configuration())
         print(f"\n[{label}] target joints (deg): {np.round(np.rad2deg(q_goal), 2)}")
         print(
