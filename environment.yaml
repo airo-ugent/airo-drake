@@ -11,9 +11,9 @@ dependencies:
   - python=3.10
   - pip
   - pip:
-    - numpy==1.26.4
-    - pytest
-    - pre-commit
-    - mypy
-    - "airo-typing @ git+https://github.com/airo-ugent/airo-mono@main#subdirectory=airo-typing"
-    - -e .
+      - numpy
+      - pytest
+      - pre-commit
+      - mypy
+      - airo-typing
+      - -e .
