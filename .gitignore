@@ -10,3 +10,5 @@
 build/
 dist/
 notebooks/**.urdf
+notebooks/**.json
+notebooks/.ipynb_checkpoints/*
